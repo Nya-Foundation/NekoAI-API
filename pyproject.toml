@@ -3,8 +3,8 @@ requires = ["setuptools>=77.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "novelai-neko"
-version = "0.1.0"
+name = "nekoai-api"
+version = "0.0.1"
 description = "🎨 A lightweight async Python API for NovelAI image generation and director tools."
 keywords = ["API", "async", "NovelAI", "AI", "image generation", "nai3", "nai4"]
 readme = "README.md"
