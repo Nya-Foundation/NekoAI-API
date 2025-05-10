@@ -1,0 +1,29 @@
+{
+    "input": "1 girl",
+    "model": "nai-diffusion-3",
+    "action": "generate",
+    "parameters": {
+        "params_version": 3,
+        "width": 1216,
+        "height": 832,
+        "scale": 6.3,
+        "sampler": "k_dpmpp_2s_ancestral",
+        "steps": 28,
+        "n_samples": 1,
+        "ucPreset": 0,
+        "qualityToggle": false,
+        "sm": true,
+        "sm_dyn": true,
+        "dynamic_thresholding": false,
+        "controlnet_strength": 1,
+        "legacy": false,
+        "add_original_image": true,
+        "cfg_rescale": 0.28,
+        "noise_schedule": "karras",
+        "legacy_v3_extend": false,
+        "skip_cfg_above_sigma": 19,
+        "seed": 2477589936,
+        "characterPrompts": [],
+        "negative_prompt": "nsfw, lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract], bad fingers, bad hands,  "
+    }
+}

@@ -1,0 +1,46 @@
+{
+    "input": "1 girl, cute, red_eye, long white shirt, white_hair, cat ear headphone, A speech bubble with text says \"Naia\", rating:general, best quality, very aesthetic, absurdres.Text:Naia, close-up shot, warm-toned, best quality",
+    "model": "nai-diffusion-4-curated-preview",
+    "action": "generate",
+    "parameters": {
+        "params_version": 3,
+        "width": 832,
+        "height": 1216,
+        "scale": 6,
+        "sampler": "k_dpmpp_2m_sde",
+        "steps": 28,
+        "n_samples": 1,
+        "ucPreset": 0,
+        "qualityToggle": true,
+        "autoSmea": true,
+        "dynamic_thresholding": false,
+        "controlnet_strength": 1,
+        "legacy": false,
+        "add_original_image": true,
+        "cfg_rescale": 0,
+        "noise_schedule": "karras",
+        "legacy_v3_extend": false,
+        "skip_cfg_above_sigma": 19,
+        "use_coords": false,
+        "legacy_uc": false,
+        "normalize_reference_strength_multiple": true,
+        "seed": 2178012515,
+        "characterPrompts": [],
+        "v4_prompt": {
+            "caption": {
+                "base_caption": "1 girl, cute, red_eye, long white shirt, white_hair, cat ear headphone, A speech bubble with text says \"Naia\", rating:general, best quality, very aesthetic, absurdres.Text:Naia, close-up shot, warm-toned, best quality",
+                "char_captions": []
+            },
+            "use_coords": false,
+            "use_order": true
+        },
+        "v4_negative_prompt": {
+            "caption": {
+                "base_caption": "blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, logo, dated, signature, multiple views, gigantic breasts, white blank page, blank page, bad fingers, bad hands,  ",
+                "char_captions": []
+            },
+            "legacy_uc": false
+        },
+        "negative_prompt": "blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, logo, dated, signature, multiple views, gigantic breasts, white blank page, blank page, bad fingers, bad hands,  "
+    }
+}

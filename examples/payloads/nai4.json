@@ -1,0 +1,48 @@
+{
+    "input": "1 girl, no text, best quality, very aesthetic, absurdres",
+    "model": "nai-diffusion-4-full",
+    "action": "generate",
+    "parameters": {
+        "params_version": 3,
+        "width": 832,
+        "height": 1216,
+        "scale": 5.5,
+        "sampler": "k_euler_ancestral",
+        "steps": 28,
+        "n_samples": 1,
+        "ucPreset": 0,
+        "qualityToggle": true,
+        "autoSmea": false,
+        "dynamic_thresholding": false,
+        "controlnet_strength": 1,
+        "legacy": false,
+        "add_original_image": true,
+        "cfg_rescale": 0,
+        "noise_schedule": "karras",
+        "legacy_v3_extend": false,
+        "skip_cfg_above_sigma": 19,
+        "use_coords": true,
+        "legacy_uc": false,
+        "normalize_reference_strength_multiple": true,
+        "seed": 4171864422,
+        "characterPrompts": [],
+        "v4_prompt": {
+            "caption": {
+                "base_caption": "1 girl, no text, best quality, very aesthetic, absurdres",
+                "char_captions": []
+            },
+            "use_coords": true,
+            "use_order": true
+        },
+        "v4_negative_prompt": {
+            "caption": {
+                "base_caption": "nsfw, blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, multiple views, logo, too many watermarks, white blank page, blank page, bad fingers, bad hands,  ",
+                "char_captions": []
+            },
+            "legacy_uc": false
+        },
+        "negative_prompt": "nsfw, blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, multiple views, logo, too many watermarks, white blank page, blank page, bad fingers, bad hands,  ",
+        "deliberate_euler_ancestral_bug": false,
+        "prefer_brownian": true
+    }
+}
