@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.1.2 (2025-05-10)
+
+### Bug Fixes
+
+- Fix circular import issue
+  ([`d911010`](https://github.com/Nya-Foundation/NekoAI-API/commit/d9110107fe92a6e4f10d240399b5d2f4c40f9a37))
+
+
 ## v0.1.1 (2025-05-10)
 
 ### Bug Fixes

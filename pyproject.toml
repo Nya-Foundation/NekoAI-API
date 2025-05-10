@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nekoai-api"
-version = "0.1.1"
+version = "0.1.2"
 description = "🎨 A lightweight async Python API for NovelAI image generation and director tools."
 keywords = ["API", "async", "NovelAI", "AI", "image generation", "nai3", "nai4"]
 readme = "README.md"
