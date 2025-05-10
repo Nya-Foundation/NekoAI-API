@@ -1,3 +1,4 @@
+from .constant import DirectorTools, EmotionLevel, EmotionOptions
 from .director import (
     BackgroundRemovalRequest,
     ColorizeRequest,
@@ -6,7 +7,6 @@ from .director import (
     EmotionRequest,
     LineArtRequest,
 )
-from .constant import DirectorTools, EmotionLevel, EmotionOptions
 from .host import HostInstance
 from .image import Image
 from .metadata import Metadata
