@@ -46,24 +46,71 @@ def encode_access_key(user: User) -> str:
     return hashed[:64]
 
 
-def parse_image(file_path: str) -> tuple[int, int, str]:
+def parse_image(image_input) -> tuple[int, int, str]:
     """
-    Read a PNG image and return its dimensions and Base64 encoded raw data
-    without using PIL.
+    Read an image from various input types and return its dimensions and Base64 encoded raw data.
 
     Args:
-        file_path (str): Path to the PNG image file
+        image_input: Can be one of:
+            - str: Path to an image file
+            - pathlib.Path: Path object pointing to an image file
+            - bytes: Raw image bytes
+            - io.BytesIO: BytesIO object containing image data
+            - Any file-like object with read() method (must be in binary mode)
+            - base64 encoded string (must start with 'data:image/' or be a valid base64 string)
 
     Returns:
         tuple: (width, height, base64_string)
     """
     import base64
     import struct
+    from pathlib import Path
+
+    img_bytes = None
 
     try:
-        # Read the file
-        with open(file_path, "rb") as f:
-            img_bytes = f.read()
+        # Handle different input types
+        if isinstance(image_input, str):
+            # Check if it's already a base64 string
+            if image_input.startswith("data:image/"):
+                # Extract the base64 part after the comma
+                base64_encoded = image_input.split(",", 1)[1]
+                img_bytes = base64.b64decode(base64_encoded)
+            elif len(image_input) > 100 and set(image_input).issubset(
+                set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=")
+            ):
+                # Looks like a base64 string
+                try:
+                    img_bytes = base64.b64decode(image_input)
+                except Exception:
+                    # If it's not a valid base64 string, treat it as a file path
+                    with open(image_input, "rb") as f:
+                        img_bytes = f.read()
+            else:
+                # Treat as file path
+                with open(image_input, "rb") as f:
+                    img_bytes = f.read()
+        elif isinstance(image_input, Path):
+            # pathlib.Path object
+            with open(image_input, "rb") as f:
+                img_bytes = f.read()
+        elif isinstance(image_input, bytes):
+            # Raw bytes
+            img_bytes = image_input
+        elif isinstance(image_input, io.BytesIO):
+            # BytesIO object
+            image_input.seek(0)
+            img_bytes = image_input.read()
+        elif hasattr(image_input, "read"):
+            # Any file-like object with read method
+            # Make sure to reset position
+            try:
+                image_input.seek(0)
+            except (AttributeError, IOError):
+                pass
+            img_bytes = image_input.read()
+        else:
+            raise TypeError(f"Unsupported image input type: {type(image_input)}")
 
         # Verify PNG signature (first 8 bytes should be 89 50 4E 47 0D 0A 1A 0A)
         if img_bytes[:8] != b"\x89PNG\r\n\x1a\n":
