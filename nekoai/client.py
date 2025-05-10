@@ -9,7 +9,7 @@ from httpx import AsyncClient, ReadTimeout
 from loguru import logger
 from pydantic import validate_call
 
-from .types import Image, Metadata, User, EmotionLevel, EmotionOptions
+from .types import EmotionLevel, EmotionOptions, Image, Metadata, User
 
 if TYPE_CHECKING:
     from .types.director import DirectorRequest

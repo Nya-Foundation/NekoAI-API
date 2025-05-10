@@ -1,5 +1,7 @@
 from typing import Literal, Optional
+
 from pydantic import BaseModel, Field
+
 from .constant import EmotionLevel, EmotionOptions
 
 
