@@ -1,8 +1,6 @@
 from typing import Literal, Optional
-
 from pydantic import BaseModel, Field
-
-from nekoai.constant import EmotionLevel, EmotionOptions
+from .constant import EmotionLevel, EmotionOptions
 
 
 class DirectorRequest(BaseModel):
