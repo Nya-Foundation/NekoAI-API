@@ -5,7 +5,6 @@ Authentication is done with a direct access token.
 """
 
 import asyncio
-import base64
 import os
 
 from nekoai import NovelAI

@@ -52,7 +52,7 @@ class CharacterPrompt(BaseModel):
     """
 
     prompt: str
-    uc: str = ""
+    uc: str = "lowres, aliasing,"
     center: PositionCoords = Field(default_factory=PositionCoords)
     enabled: bool = True
 

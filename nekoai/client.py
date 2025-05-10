@@ -356,14 +356,18 @@ class NovelAI:
             return zf.read(file_names[0])
 
     @running
-    async def lineart(self, image: str) -> "Image":
+    async def lineart(self, image) -> "Image":
         """
         Convert an image to line art using the Director tool.
 
         Parameters
         ----------
-        image: `str`
-            path to the image file
+        image: Various types accepted:
+            - `str`: Path to an image file or base64-encoded image
+            - `pathlib.Path`: Path object pointing to an image file
+            - `bytes`: Raw image bytes
+            - `io.BytesIO`: BytesIO object containing image data
+            - Any file-like object with read() method
 
         Returns
         -------
@@ -378,13 +382,17 @@ class NovelAI:
         return await self.use_director_tool(request)
 
     @running
-    async def sketch(self, image: str) -> "Image":
+    async def sketch(self, image) -> "Image":
         """
         Convert an image to sketch using the Director tool.
         Parameters
         ----------
-        image: `str`
-            path to the image file
+        image: Various types accepted:
+            - `str`: Path to an image file or base64-encoded image
+            - `pathlib.Path`: Path object pointing to an image file
+            - `bytes`: Raw image bytes
+            - `io.BytesIO`: BytesIO object containing image data
+            - Any file-like object with read() method
 
         Returns
         -------
@@ -399,18 +407,18 @@ class NovelAI:
         return await self.use_director_tool(request)
 
     @running
-    async def background_removal(self, image: str) -> "Image":
+    async def background_removal(self, image) -> "Image":
         """
         Remove background from an image using the Director tool.
 
         Parameters
         ----------
-        image: `str`
-            Base64-encoded image
-        width: `int`
-            Width of the image in pixels
-        height: `int`
-            Height of the image in pixels
+        image: Various types accepted:
+            - `str`: Path to an image file or base64-encoded image
+            - `pathlib.Path`: Path object pointing to an image file
+            - `bytes`: Raw image bytes
+            - `io.BytesIO`: BytesIO object containing image data
+            - Any file-like object with read() method
 
         Returns
         -------
@@ -427,14 +435,18 @@ class NovelAI:
         return await self.use_director_tool(request)
 
     @running
-    async def declutter(self, image: str) -> "Image":
+    async def declutter(self, image) -> "Image":
         """
         Declutter an image using the Director tool.
 
         Parameters
         ----------
-        image: `str`
-            path to the image file
+        image: Various types accepted:
+            - `str`: Path to an image file or base64-encoded image
+            - `pathlib.Path`: Path object pointing to an image file
+            - `bytes`: Raw image bytes
+            - `io.BytesIO`: BytesIO object containing image data
+            - Any file-like object with read() method
 
         Returns
         -------
@@ -449,18 +461,18 @@ class NovelAI:
         return await self.use_director_tool(request)
 
     @running
-    async def colorize(self, image: str, width: int, height: int) -> "Image":
+    async def colorize(self, image) -> "Image":
         """
         Colorize a line art or sketch using the Director tool.
 
         Parameters
         ----------
-        image: `str`
-            Base64-encoded image
-        width: `int`
-            Width of the image in pixels
-        height: `int`
-            Height of the image in pixels
+        image: Various types accepted:
+            - `str`: Path to an image file or base64-encoded image
+            - `pathlib.Path`: Path object pointing to an image file
+            - `bytes`: Raw image bytes
+            - `io.BytesIO`: BytesIO object containing image data
+            - Any file-like object with read() method
 
         Returns
         -------
@@ -469,13 +481,15 @@ class NovelAI:
         """
         from .types.director import ColorizeRequest
 
-        request = ColorizeRequest(width=width, height=height, image=image)
+        width, height, base64_image = parse_image(image)
+
+        request = ColorizeRequest(width=width, height=height, image=base64_image)
         return await self.use_director_tool(request)
 
     @running
     async def change_emotion(
         self,
-        image: str,
+        image,
         emotion: "EmotionOptions",
         prompt: Optional[str] = "",
         emotion_level: "EmotionLevel" = EmotionLevel.NORMAL,
@@ -485,12 +499,16 @@ class NovelAI:
 
         Parameters
         ----------
-        image: `str`
-            path to the image file
-        motion: EmotionOptions
+        image: Various types accepted:
+            - `str`: Path to an image file or base64-encoded image
+            - `pathlib.Path`: Path object pointing to an image file
+            - `bytes`: Raw image bytes
+            - `io.BytesIO`: BytesIO object containing image data
+            - Any file-like object with read() method
+        emotion: EmotionOptions
             The target emotion to apply
         prompt: str
-            Addtional prompt for the request
+            Additional prompt for the request
         emotion_level: EmotionLevel, optional
             Strength level of the emotion, defaults to NORMAL
 

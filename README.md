@@ -330,7 +330,7 @@ asyncio.run(main())
 Additional tools include:
 
 ```python
-# Declutter an image
+# Declutter an image, input can be str | pathlib.Path | bytes | io.BytesIO
 result = await client.declutter(image='image.png')
 
 # Colorize a sketch or line art

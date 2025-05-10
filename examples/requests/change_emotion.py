@@ -25,6 +25,9 @@ async def main():
         # Load an image file and encode it as base64
         image_path = "../input/example_image.png"  # Replace with your image path
 
+        # Declutter the image
+        result = await client.declutter(image=image_path)
+
         # Change the emotion in the image
         # Going from NEUTRAL to HAPPY emotion with NORMAL emotion level
         result = await client.change_emotion(
