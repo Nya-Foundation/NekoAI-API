@@ -1,7 +1,20 @@
 # CHANGELOG
 
 
+## v0.1.1 (2025-05-10)
+
+### Bug Fixes
+
+- Minor comments update just to trigger a pipeline run...
+  ([`2b9e159`](https://github.com/Nya-Foundation/NekoAI-API/commit/2b9e1591cd73c6e356cc0f1ae1d28edc6443ad2c))
+
+
 ## v0.1.0 (2025-05-10)
+
+### Chores
+
+- Fix package name
+  ([`f4c33b2`](https://github.com/Nya-Foundation/NekoAI-API/commit/f4c33b22ad682055fda2cfe977b6b509469be047))
 
 ### Features
 
