@@ -6,6 +6,7 @@ from .director import (
     EmotionRequest,
     LineArtRequest,
 )
+from .constant import DirectorTools, EmotionLevel, EmotionOptions
 from .host import HostInstance
 from .image import Image
 from .metadata import Metadata
@@ -34,4 +35,7 @@ __all__ = [
     "CharacterCaption",
     "PositionCoords",
     "HostInstance",
+    "DirectorTools",
+    "EmotionOptions",
+    "EmotionLevel",
 ]
