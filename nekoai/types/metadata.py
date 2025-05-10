@@ -138,9 +138,9 @@ class Metadata(BaseModel):
     normalize_reference_strength_multiple: `bool`, optional
         Whether to normalize reference strengths for vibe transfer in V4/V4.5
     deliberate_euler_ancestral_bug: `bool`, optional
-        Enables the deliberate bug in euler ancestral sampler for V4.5
+        Enables the deliberate bug in euler ancestral sampler for V4.5, default to False
     prefer_brownian: `bool`, optional
-        Prefer brownian noise for V4.5
+        Prefer brownian noise for V4.5, set when the sampler is k_euler_ancestral
 
     | Misc
     legacy: `bool`, optional
