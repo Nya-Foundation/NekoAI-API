@@ -307,7 +307,7 @@ Change the emotion of a character in an image:
 import base64
 import asyncio
 from nekoai import NovelAI
-from nekoai.constant import EmotionOptions, EmotionLevel
+from nekoai.types import EmotionOptions, EmotionLevel
 
 async def main():
     client = NovelAI(token="your_access_token")
