@@ -1,0 +1,105 @@
+{
+    "input": "1 girl",
+    "model": "nai-diffusion-4-5-curated",
+    "action": "generate",
+    "parameters": {
+        "params_version": 3,
+        "width": 832,
+        "height": 1216,
+        "scale": 5,
+        "sampler": "k_euler_ancestral",
+        "steps": 23,
+        "n_samples": 1,
+        "ucPreset": 0,
+        "qualityToggle": true,
+        "autoSmea": false,
+        "dynamic_thresholding": false,
+        "controlnet_strength": 1,
+        "legacy": false,
+        "add_original_image": true,
+        "cfg_rescale": 0,
+        "noise_schedule": "karras",
+        "legacy_v3_extend": false,
+        "skip_cfg_above_sigma": null,
+        "use_coords": false,
+        "legacy_uc": false,
+        "normalize_reference_strength_multiple": true,
+        "seed": 1178964723,
+        "characterPrompts": [
+            {
+                "prompt": "girl, klee_(genshin_impact)",
+                "uc": "lowres, aliasing, ",
+                "center": {
+                    "x": 0.5,
+                    "y": 0.5
+                },
+                "enabled": true
+            },
+            {
+                "prompt": "girl, qiqi_(genshin_impact)",
+                "uc": "lowres, aliasing, ",
+                "center": {
+                    "x": 0.5,
+                    "y": 0.5
+                },
+                "enabled": true
+            }
+        ],
+        "v4_prompt": {
+            "caption": {
+                "base_caption": "1 girl",
+                "char_captions": [
+                    {
+                        "char_caption": "girl, klee_(genshin_impact)",
+                        "centers": [
+                            {
+                                "x": 0.5,
+                                "y": 0.5
+                            }
+                        ]
+                    },
+                    {
+                        "char_caption": "girl, qiqi_(genshin_impact)",
+                        "centers": [
+                            {
+                                "x": 0.5,
+                                "y": 0.5
+                            }
+                        ]
+                    }
+                ]
+            },
+            "use_coords": false,
+            "use_order": true
+        },
+        "v4_negative_prompt": {
+            "caption": {
+                "base_caption": "blurry, lowres, upscaled, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, negative space, blank page, bad fingers, bad hands,  ",
+                "char_captions": [
+                    {
+                        "char_caption": "lowres, aliasing, ",
+                        "centers": [
+                            {
+                                "x": 0.5,
+                                "y": 0.5
+                            }
+                        ]
+                    },
+                    {
+                        "char_caption": "lowres, aliasing, ",
+                        "centers": [
+                            {
+                                "x": 0.5,
+                                "y": 0.5
+                            }
+                        ]
+                    }
+                ]
+            },
+            "legacy_uc": false
+        },
+        "negative_prompt": "blurry, lowres, upscaled, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, negative space, blank page, bad fingers, bad hands,  ",
+        "deliberate_euler_ancestral_bug": false,
+        "prefer_brownian": true
+    }
+}

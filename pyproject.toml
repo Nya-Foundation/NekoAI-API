@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=77.0.3", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "novelai-neko"
+version = "0.0.1"
+description = "🎨 A lightweight async Python API for NovelAI image generation and director tools."
+keywords = ["API", "async", "NovelAI", "AI", "image generation", "nai3", "nai4"]
+readme = "README.md"
+authors = [
+    {name = "Nya Foundation Team (k3scat)", email = "k3scat@gmail.com"},
+]
+license = "MIT"
+license-files = ["LICENSE"]
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.25.2",
+    "pydantic>=2.5.3",
+    "loguru>=0.7.2",
+    "argon2-cffi>=21.3.0",
+]
+
+[project.urls]
+Repository = "https://github.com/Nya-Foundation/NekoAI-API"
+Issues = "https://github.com/Nya-Foundation/NekoAI-API/issues"
+
+[project.scripts]
+nekoai = "nekoai.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "."}  # Use current directory as source root
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]  # Root directory for discovery
+include = ["nekoai*"] # Include nekoai and its subpackages
+
+
+[tool.setuptools.exclude-package-data]
+"*" = ["*.pyc", "*.pyo", "__pycache__/*"]
+
+[tool.semantic_release]
+tag_format = "v{version}"
+version_toml = ["pyproject.toml:project.version"]
+version_variables = ["nekoai/_version.py:__version__"]
+build_command = "python -m pip install build && python -m build"
+commit_parser = "conventional"
+commit_message = "chore(release): bump version to v{version} [skip ci]"
+commit_author = "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+
+[tool.semantic_release.publish]
+dist_glob_patterns = ["dist/*"]
+upload_to_vcs_release = true
