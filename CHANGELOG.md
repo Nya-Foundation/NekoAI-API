@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v0.1.3 (2025-05-11)
+
+### Bug Fixes
+
+- Enhanced parse_image and director tools for various input types for image
+  ([`ba380de`](https://github.com/Nya-Foundation/NekoAI-API/commit/ba380de8adb2bc9384e831f7a825d5754fba3ddc))
+
+### Chores
+
+- **format**: Apply automatic formatting [skip ci]
+  ([`920ec28`](https://github.com/Nya-Foundation/NekoAI-API/commit/920ec28555ca1490e750ef6fcb770c7de46607dd))
+
+- **format**: Apply automatic formatting [skip ci]
+  ([`6a466cc`](https://github.com/Nya-Foundation/NekoAI-API/commit/6a466ccd577acd78aedc2c087d95238b806ba6fc))
+
+
 ## v0.1.2 (2025-05-10)
 
 ### Bug Fixes
