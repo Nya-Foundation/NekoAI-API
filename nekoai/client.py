@@ -369,7 +369,6 @@ class NovelAI:
             return
 
         reference_image_multiple = []
-        vibe_tokens = []
 
         # Process each reference image
         for i, ref_image in enumerate(metadata.reference_image_multiple):
@@ -410,11 +409,10 @@ class NovelAI:
                 self.vibe_cache[cache_key] = vibe_token
 
             # Add both the original image and its vibe token
-            reference_image_multiple.append(ref_image)
-            vibe_tokens.append(vibe_token)
+            reference_image_multiple.append(vibe_token)
 
         # Update metadata with both reference images and their vibe tokens
-        metadata.reference_image_multiple = reference_image_multiple + vibe_tokens
+        metadata.reference_image_multiple = reference_image_multiple
 
         # Clean up legacy fields
         metadata.reference_information_extracted_multiple = None
