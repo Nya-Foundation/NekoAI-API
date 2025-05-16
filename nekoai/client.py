@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 from .constant import HEADERS, Endpoint, Host, Model
 from .exceptions import AuthError, TimeoutError
 from .types.host import HostInstance
-from .utils import ResponseParser, encode_access_key, parse_image, get_image_hash
+from .utils import ResponseParser, encode_access_key, get_image_hash, parse_image
 
 
 def running(func) -> callable:
