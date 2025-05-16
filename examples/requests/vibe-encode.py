@@ -1,6 +1,7 @@
-import requests
 import base64
 import os
+
+import requests
 
 url = "https://image.novelai.net/ai/encode-vibe"
 

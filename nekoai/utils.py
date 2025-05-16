@@ -1,11 +1,11 @@
+import base64
 import io
-import os
 import json
+import os
 import zipfile
 from base64 import urlsafe_b64encode
 from hashlib import blake2b, sha256
 from typing import Generator
-import base64
 
 import argon2
 

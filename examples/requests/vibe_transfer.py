@@ -3,11 +3,10 @@
 Example script for using the line art director tool with NovelAI API.
 Authentication is done with a direct access token.
 """
-import os
 import asyncio
+import os
 
-
-from nekoai import NovelAI, Resolution, Model
+from nekoai import Model, NovelAI, Resolution
 from nekoai.utils import parse_image
 
 
