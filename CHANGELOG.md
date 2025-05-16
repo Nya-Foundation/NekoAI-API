@@ -1,6 +1,28 @@
 # CHANGELOG
 
 
+## v0.2.0 (2025-05-16)
+
+### Bug Fixes
+
+- Fix vibe transfer issue
+  ([`5a4e5e0`](https://github.com/Nya-Foundation/NekoAI-API/commit/5a4e5e0c83bfe7a74369fcb0a5e361c5055bf5e8))
+
+### Chores
+
+- **format**: Apply automatic formatting [skip ci]
+  ([`aaa5ded`](https://github.com/Nya-Foundation/NekoAI-API/commit/aaa5ded109f94dd592d7b92bca96c2b957e973c4))
+
+- **format**: Apply automatic formatting [skip ci]
+  ([`ec0f1d2`](https://github.com/Nya-Foundation/NekoAI-API/commit/ec0f1d2d3e60437ce4ef6881acd3af5d552d72f4))
+
+### Features
+
+- Add better vibe transfer support for v4 model... refine metadata processing logic with better
+  default
+  ([`b36505b`](https://github.com/Nya-Foundation/NekoAI-API/commit/b36505bb27cdc57c37a98fc27fcaec4cf2812a8e))
+
+
 ## v0.1.3 (2025-05-11)
 
 ### Bug Fixes
