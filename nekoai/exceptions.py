@@ -14,6 +14,14 @@ class APIError(Exception):
     pass
 
 
+class NotEnoughCreditsError(Exception):
+    """
+    Exception for insufficient credits.
+    """
+
+    pass
+
+
 class NovelAIError(Exception):
     """
     Exception for errors returned from NovelAI which are not handled by the package.

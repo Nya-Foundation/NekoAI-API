@@ -41,7 +41,7 @@ async def main():
 
         # Generate an image with V4.5 curated model and multiple characters
         images = await client.generate_image(
-            prompt="2 girls, playing together",
+            prompt="2 girls, 2 girls, playing together",
             model=Model.V4_5_CUR,
             res_preset=Resolution.NORMAL_PORTRAIT,
             steps=23,

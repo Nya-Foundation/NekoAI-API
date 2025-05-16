@@ -45,22 +45,25 @@ class Endpoint(Enum):
     USERDATA = "/user/data"
     IMAGE = "/ai/generate-image"
     DIRECTOR = "/ai/augment-image"
+    ENCODE_VIBE = "/ai/encode-vibe"
 
 
 class Model(Enum):
     # Anime V3
     V3 = "nai-diffusion-3"
-    V3INP = "nai-diffusion-3-inpainting"
+    V3_INP = "nai-diffusion-3-inpainting"
     # Anime V4
     V4 = "nai-diffusion-4-full"
+    V4_INP = "nai-diffusion-4-full-inpainting"
+    # Anime V4 Curated
     V4_CUR = "nai-diffusion-4-curated-preview"
+    V4_CUR_INP = "nai-diffusion-4-curated-inpainting"
+    # Anime V4/5 Curated
     V4_5_CUR = "nai-diffusion-4-5-curated"
-
+    V4_5_CUR_INP = "nai-diffusion-4-5-curated-inpainting"
     # Furry model beta v1.3
-    # Note that prompt preset in Metadata added by qualityToggle and ucPreset could be different,
-    # but this module will not be specially adapted for it until a stable version is released.
-    FURRY = "nai-diffusion-furry"
-    FURRYINP = "furry-diffusion-inpainting"
+    FURRY = "nai-diffusion-furry-3"
+    FURRY_INP = "nai-diffusion-furry-3-inpainting"
 
 
 class Controlnet(Enum):
