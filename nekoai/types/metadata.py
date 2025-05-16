@@ -67,7 +67,7 @@ class Metadata(BaseModel):
         Seed 0 means that a random seed will be chosen, but not set in the metadata (so giving a seed yourself is important)
         Note: When generating multiple images, each consecutive image adds 1 to the seed parameter.
         This means it can go beyond the limit of 4294967295, making it unreproducible with a single generation
-    extra_noise_seed: `int`, optional
+    se_seed: `int`, optional
         Unknown, but seems to be fulfill the same role as seed
     sampler: `nekoai.Sampler`, optional
         Refer to https://docs.novelai.net/image/sampling.html.
@@ -130,7 +130,7 @@ class Metadata(BaseModel):
     v4_negative_prompt: `V4NegativePromptFormat`, optional
         V4/V4.5 format for negative prompts
     skip_cfg_above_sigma: `int|None`, optional
-        Parameter for V4/V4.5 models
+        Variety Boost, a new feature to improve the diversity of samples.
     use_coords: `bool`, optional
         Whether to use coordinates for character placement in V4/V4.5
     legacy_uc: `bool`, optional
@@ -152,7 +152,7 @@ class Metadata(BaseModel):
     # General
     # Fields in this section will be excluded from the output of model_dump during serialization
     prompt: str = Field(exclude=True)
-    model: Model = Field(default=Model.V3, exclude=True)
+    model: Model | str = Field(default=Model.V3, exclude=True)
     action: Action = Field(default=Action.GENERATE, exclude=True)
     res_preset: Resolution = Field(default=Resolution.NORMAL_SQUARE, exclude=True)
 
@@ -194,7 +194,7 @@ class Metadata(BaseModel):
     add_original_image: bool = True
     mask: str | None = None
 
-    # Vibe Transfer
+    # Vibe Transfer V3 legacy
     reference_image_multiple: list[str] = None
     reference_information_extracted_multiple: list[
         Annotated[float, Field(default=1, ge=0.01, le=1, multiple_of=0.01)]
@@ -206,7 +206,7 @@ class Metadata(BaseModel):
     # V4/V4.5 specific fields
     params_version: Literal[1, 2, 3] = 3
     autoSmea: bool = Field(default=False)
-    characterPrompts: List[CharacterPrompt] = None
+    characterPrompts: List[CharacterPrompt] = []
     v4_prompt: Optional[V4PromptFormat] = None
     v4_negative_prompt: Optional[V4NegativePromptFormat] = None
     skip_cfg_above_sigma: Optional[int] = None
@@ -220,64 +220,37 @@ class Metadata(BaseModel):
     legacy: bool = False
     legacy_v3_extend: bool = False
 
-    @model_validator(mode="after")
-    def use_coords_validator(self) -> "Metadata":
+    @model_validator(mode="before")
+    def validate_model_field(cls, data):
         """
-        Validate the use_coords field. If characterPrompts is not empty or coords are not the default (0.5, 0.5),
-        set use_coords to True.
+        Convert string model value to Model enum if needed.
         """
-        if self.characterPrompts and any(
-            cp.center.x != 0.5 or cp.center.y != 0.5 for cp in self.characterPrompts
+        if (
+            isinstance(data, dict)
+            and "model" in data
+            and isinstance(data["model"], str)
         ):
-            self.use_coords = True
-        return self
+            try:
+                # Try to convert string to Model enum
+                data["model"] = Model(data["model"])
+            except ValueError:
+                try:
+                    # Try to match by enum value
+                    for model_enum in Model:
+                        if model_enum.value == data["model"]:
+                            data["model"] = model_enum
+                            break
+                except:
+                    raise ValueError(f"Invalid model: {data['model']}")
+        return data
 
     @model_validator(mode="after")
     def n_samples_validator(self) -> "Metadata":
         """
         Validate the following:
 
-        - If length of `reference_information_extracted_multiple` and `reference_strength_multiple` matches `reference_image_multiple`.
-            If not, fill the missing values with default or truncate the extra values.
         - If value of `n_samples` exceeds the maximum allowed value based on resolution.
         """
-
-        if self.reference_image_multiple:
-            if len(self.reference_information_extracted_multiple) > len(
-                self.reference_image_multiple
-            ):
-                self.reference_information_extracted_multiple = (
-                    self.reference_information_extracted_multiple[
-                        : len(self.reference_image_multiple)
-                    ]
-                )
-            elif len(self.reference_information_extracted_multiple) < len(
-                self.reference_image_multiple
-            ):
-                self.reference_information_extracted_multiple += [
-                    1
-                    for _ in range(
-                        len(self.reference_image_multiple)
-                        - len(self.reference_information_extracted_multiple)
-                    )
-                ]
-
-            if len(self.reference_strength_multiple) > len(
-                self.reference_image_multiple
-            ):
-                self.reference_strength_multiple = self.reference_strength_multiple[
-                    : len(self.reference_image_multiple)
-                ]
-            elif len(self.reference_strength_multiple) < len(
-                self.reference_image_multiple
-            ):
-                self.reference_strength_multiple += [
-                    0.6
-                    for _ in range(
-                        len(self.reference_image_multiple)
-                        - len(self.reference_strength_multiple)
-                    )
-                ]
 
         max_n_samples = self.get_max_n_samples()
         if self.n_samples > max_n_samples:
@@ -287,66 +260,200 @@ class Metadata(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def setup_v4_format(self) -> "Metadata":
+    def vibe_transfer_validator(self) -> "Metadata":
         """
-        Set up V4/V4.5 format parameters based on model version
+        Validate the following:
+
+        - If length of `reference_information_extracted_multiple` and `reference_strength_multiple` matches `reference_image_multiple`.
+            If not, fill the missing values with default or truncate the extra values.
         """
-        # V4 and V4.5 models need params_version=3
-        if self.model in [Model.V4, Model.V4_CUR, Model.V4_5_CUR]:
-            self.params_version = 3
 
-            # Create V4 prompt format if not provided
-            if not self.v4_prompt:
-                char_captions = []
-
-                # Convert character prompts to V4 format if they exist
-                if self.characterPrompts:
-                    for cp in self.characterPrompts:
-                        if cp.enabled:
-                            # Deduplicate character prompts
-                            deduped_prompt = self.deduplicate_tags(cp.prompt)
-                            char_captions.append(
-                                CharacterCaption(
-                                    char_caption=deduped_prompt, centers=[cp.center]
-                                )
-                            )
-
-                self.v4_prompt = V4PromptFormat(
-                    caption=V4CaptionFormat(
-                        # Use already deduplicated base prompt
-                        base_caption=self.prompt,
-                        char_captions=char_captions,
-                    ),
-                    use_coords=self.use_coords,
-                    use_order=True,
-                )
-
-            # Create V4 negative prompt format if not provided
-            if not self.v4_negative_prompt and self.negative_prompt:
-                char_captions = []
-
-                # Convert character prompts negative UCs to V4 format if they exist
-                if self.characterPrompts:
-                    for cp in self.characterPrompts:
-                        if cp.enabled and cp.uc:
-                            # Deduplicate character negative prompts
-                            deduped_uc = self.deduplicate_tags(cp.uc)
-                            char_captions.append(
-                                CharacterCaption(
-                                    char_caption=deduped_uc, centers=[cp.center]
-                                )
-                            )
-
-                self.v4_negative_prompt = V4NegativePromptFormat(
-                    caption=V4CaptionFormat(
-                        # Use already deduplicated negative prompt
-                        base_caption=self.negative_prompt,
-                        char_captions=char_captions,
-                    ),
-                    legacy_uc=self.legacy_uc,
-                )
+        if self.model not in [Model.V3, Model.V3_INP, Model.FURRY, Model.FURRY_INP]:
+            return self
+        if not self.reference_image_multiple:
+            return self
+        if not self.reference_information_extracted_multiple:
+            self.reference_information_extracted_multiple = [
+                1.0 for _ in range(len(self.reference_image_multiple))
+            ]
+        if not self.reference_strength_multiple:
+            self.reference_strength_multiple = [
+                0.6 for _ in range(len(self.reference_image_multiple))
+            ]
 
         return self
+
+    def hanlde_use_coords(self):
+        """
+        Validate the use_coords field. If characterPrompts is not empty or coords are not the default (0.5, 0.5),
+        set use_coords to True.
+        """
+        if self.characterPrompts and any(
+            cp.center.x != 0.5 or cp.center.y != 0.5 for cp in self.characterPrompts
+        ):
+            self.use_coords = True
+
+    def handle_character_prompts(self):
+        """
+        Handle the character prompts default values, if parameters are not set. and deduplicate the tags in the prompt and uc.
+        """
+        if not self.characterPrompts:
+            return
+
+        # Set default values for character prompts
+        for cp in self.characterPrompts:
+            cp.enabled = cp.enabled or True
+            cp.prompt = self.deduplicate_tags(cp.prompt) if cp.prompt else "1girl, cute"
+            cp.uc = self.deduplicate_tags(cp.uc) if cp.uc else "lowres, aliasing,"
+            cp.center.x = cp.center.x or 0.5
+            cp.center.y = cp.center.y or 0.5
+
+    def handle_v4_prompt(self):
+        """
+        Handle the V4 prompt format.
+
+        If the model is V4/V4.5 and v4_prompt is not set, create a new V4PromptFormat object.
+        """
+        # skip if v4_prompt is already set
+        if self.v4_prompt:
+            return
+
+        # skip if model is not V4/V4.5
+        if self.model not in [
+            Model.V4,
+            Model.V4_CUR,
+            Model.V4_5_CUR,
+            Model.V4_5_CUR_INP,
+            Model.V4_INP,
+        ]:
+            return
+
+        char_captions: List[CharacterCaption] = []
+        for cp in self.characterPrompts:
+            if cp.enabled:
+                char_captions.append(
+                    CharacterCaption(char_caption=cp.prompt, centers=[cp.center])
+                )
+
+        # Set up V4 prompt format
+        self.v4_prompt = V4PromptFormat(
+            caption=V4CaptionFormat(
+                base_caption=self.prompt, char_captions=char_captions
+            ),
+            use_coords=self.use_coords,
+            use_order=True,
+        )
+
+    def handle_v4_negative_prompt(self):
+        """
+        Handle the V4 negative prompt format.
+
+        If the model is V4/V4.5 and v4_negative_prompt is not set, create a new V4NegativePromptFormat object.
+        """
+        # skip if v4_negative_prompt is already set
+        if self.v4_negative_prompt:
+            return
+
+        # skip if model is not V4/V4.5
+        if self.model not in [
+            Model.V4,
+            Model.V4_CUR,
+            Model.V4_5_CUR,
+            Model.V4_5_CUR_INP,
+            Model.V4_INP,
+        ]:
+            return
+
+        char_captions: List[CharacterCaption] = []
+        for cp in self.characterPrompts:
+            if cp.enabled and cp.uc:
+                char_captions.append(
+                    CharacterCaption(char_caption=cp.uc, centers=[cp.center])
+                )
+
+        # Set up V4 negative prompt format
+        self.v4_negative_prompt = V4NegativePromptFormat(
+            caption=V4CaptionFormat(
+                base_caption=self.negative_prompt, char_captions=char_captions
+            ),
+            legacy_uc=self.legacy_uc,
+        )
+
+    def handle_quality_tags(self) -> None:
+        """
+        Handle the quality tags in the prompt.
+        If qualityToggle is True, append quality tags to the prompt.
+        """
+        if not self.qualityToggle:
+            return
+
+        quality_tags = ""
+
+        if self.model == Model.V4_5_CUR or self.model == Model.V4_5_CUR_INP:
+            quality_tags = (
+                ", location, masterpiece, no text, -0.8::feet::, rating:general"
+            )
+        if self.model == Model.V4 or self.model == Model.V4_INP:
+            quality_tags = ", no text, best quality, very aesthetic, absurdres"
+
+        if self.model == Model.V4_CUR or self.model == Model.V4_CUR_INP:
+            quality_tags = (
+                ", rating:general, amazing quality, very aesthetic, absurdres"
+            )
+
+        if self.model == Model.V3 or self.model == Model.V3_INP:
+            quality_tags = ", best quality, amazing quality, very aesthetic, absurdres"
+
+        if self.model == Model.FURRY or self.model == Model.FURRY_INP:
+            quality_tags = ", {best quality}, {amazing quality}"
+
+        self.prompt += quality_tags
+
+    def handle_uc_preset(self) -> None:
+        """
+        Handle the ucPreset in the prompt (might vary by model).
+        If ucPreset is 0, append heavy undesired content tags to the negative prompt.
+        If ucPreset is 1, append light undesired content tags to the negative prompt.
+        If ucPreset is 2, append human focus undesired content tags to the negative prompt.
+        if ucPreset is 3, append none undesired content tags to the negative prompt.
+        """
+        uc = ""
+
+        if self.model == Model.V4_5_CUR or self.model == Model.V4_5_CUR_INP:
+            if self.ucPreset == 0:
+                uc = ", blurry, lowres, upscaled, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, negative space, blank page"
+            elif self.ucPreset == 1:
+                uc = ", blurry, lowres, upscaled, artistic error, scan artifacts, jpeg artifacts, logo, too many watermarks, negative space, blank page"
+            elif self.ucPreset == 2:
+                uc = ", blurry, lowres, upscaled, artistic error, film grain, scan artifacts, bad anatomy, bad hands, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, @_@, mismatched pupils, glowing eyes, negative space, blank page"
+
+        elif self.model == Model.V4 or self.model == Model.V4_INP:
+            if self.ucPreset == 0:
+                uc = ", blurry, lowres, upscaled, artistic error, film grain, scan artifacts, bad anatomy, bad hands, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, @_@, mismatched pupils, glowing eyes, negative space, blank page"
+            elif self.ucPreset == 1:
+                uc = ", blurry, lowres, error, worst quality, bad quality, jpeg artifacts, very displeasing"
+
+        elif self.model == Model.V4_CUR or self.model == Model.V4_CUR_INP:
+            if self.ucPreset == 0:
+                uc = ", blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, logo, dated, signature, multiple views, gigantic breasts"
+            elif self.ucPreset == 1:
+                uc = ", blurry, lowres, error, worst quality, bad quality, jpeg artifacts, very displeasing, logo, dated, signature"
+
+        elif self.model == Model.V3 or self.model == Model.V3_INP:
+            if self.ucPreset == 0:
+                uc = ", lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract],"
+            elif self.ucPreset == 1:
+                uc = ", lowres, jpeg artifacts, worst quality, watermark, blurry, very displeasing,"
+            elif self.ucPreset == 2:
+                uc = ", lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract], bad anatomy, bad hands, @_@, mismatched pupils, heart-shaped pupils, glowing eyes,"
+
+        elif self.model == Model.FURRY or self.model == Model.FURRY_INP:
+            if self.ucPreset == 0:
+                uc = ", {{worst quality}}, [displeasing], {unusual pupils}, guide lines, {{unfinished}}, {bad}, url, artist name, {{tall image}}, mosaic, {sketch page}, comic panel, impact (font), [dated], {logo}, ych, {what}, {where is your god now}, {distorted text}, repeated text, {floating head}, {1994}, {widescreen}, absolutely everyone, sequence, {compression artifacts}, hard translated, {cropped}, {commissioner name}, unknown text, high contrast,"
+            elif self.ucPreset == 1:
+                uc = ", {worst quality}, guide lines, unfinished, bad, url, tall image, widescreen, compression artifacts, unknown text,"
+
+        self.negative_prompt += uc
 
     # override
     def model_post_init(self, *args) -> None:
@@ -358,21 +465,21 @@ class Metadata(BaseModel):
         self.width = self.width or self.res_preset.value[0]
         self.height = self.height or self.res_preset.value[1]
 
-        # Append undesired content tags to negative prompt
-        if self.ucPreset == 0:  # Heavy
-            self.negative_prompt += ", lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract]"
-        elif self.ucPreset == 1:  # Light
-            self.negative_prompt += ", lowres, jpeg artifacts, worst quality, watermark, blurry, very displeasing"
-        elif self.ucPreset == 2:  # Human Focus
-            self.negative_prompt += ", lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract], bad anatomy, bad hands, @_@, mismatched pupils, heart-shaped pupils, glowing eyes"
-
         # Append quality tags to prompt
-        if self.qualityToggle:
-            self.prompt += ", best quality, amazing quality, very aesthetic, absurdres"
+        self.handle_quality_tags()
+
+        # Append undesired content tags to negative prompt
+        self.handle_uc_preset()
 
         # Deduplicate tags after appending quality tags
         self.prompt = self.deduplicate_tags(self.prompt)
         self.negative_prompt = self.deduplicate_tags(self.negative_prompt)
+
+        self.hanlde_use_coords()
+        self.handle_character_prompts()
+
+        self.handle_v4_prompt()
+        self.handle_v4_negative_prompt()
 
         # Disable SMEA and SMEA DYN and fill default extra param values for img2img/inpaint
         if self.action == Action.IMG2IMG or self.action == Action.INPAINT:
@@ -480,7 +587,7 @@ class Metadata(BaseModel):
 
     def deduplicate_tags(self, prompt: str) -> str:
         """
-        Deduplicate tags in a prompt string.
+        Deduplicate tags in a prompt string while preserving special syntax like ::weight:: and tag:subtag.
 
         Parameters
         ----------
@@ -495,23 +602,28 @@ class Metadata(BaseModel):
         if not prompt:
             return prompt
 
-        # Split by commas, strip whitespace
-        tags = [tag.strip() for tag in prompt.split(",")]
+        # Split by commas, but preserve the original spacing pattern
+        tags = []
+        for part in prompt.split(","):
+            tag = part.strip()
+            if tag:  # Skip empty tags
+                tags.append(tag)
 
-        # Remove empty tags
-        tags = [tag for tag in tags if tag]
+        # Create a dictionary to track unique tags (case-insensitive)
+        # Use a dict to preserve order of first occurrence
+        seen_tags = {}
+        deduplicated_tags = []
 
-        # Convert to lowercase for case-insensitive comparison
-        # But keep original case for the final output
-        lowercase_to_original = {}
         for tag in tags:
-            lowercase = tag.lower()
-            # If we have multiple versions of the same tag, keep the first one
-            if lowercase not in lowercase_to_original:
-                lowercase_to_original[lowercase] = tag
+            # For comparison, normalize the tag by lowercasing
+            # But keep special syntax (::) intact for comparison
+            tag_key = tag.lower()
 
-        # Reconstruct deduplicated prompt with original case
-        deduplicated_tags = list(lowercase_to_original.values())
+            if tag_key not in seen_tags:
+                seen_tags[tag_key] = True
+                deduplicated_tags.append(tag)
+
+        # Reassemble the prompt with the same delimiter pattern (comma + space)
         return ", ".join(deduplicated_tags)
 
     def model_dump_for_api(self) -> Dict[str, Any]:
@@ -535,7 +647,14 @@ class Metadata(BaseModel):
         }
 
         # Handle V4/V4.5 specific formats
-        if self.model in [Model.V4, Model.V4_CUR, Model.V4_5_CUR]:
+        if self.model in [
+            Model.V4,
+            Model.V4_INP,
+            Model.V4_CUR,
+            Model.V4_CUR_INP,
+            Model.V4_5_CUR,
+            Model.V4_5_CUR_INP,
+        ]:
             if self.v4_prompt:
                 payload["parameters"]["v4_prompt"] = self.v4_prompt.model_dump(
                     exclude_none=True

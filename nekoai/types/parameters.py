@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 
 class PositionCoords(BaseModel):
@@ -55,33 +55,6 @@ class CharacterPrompt(BaseModel):
     uc: str = "lowres, aliasing,"
     center: PositionCoords = Field(default_factory=PositionCoords)
     enabled: bool = True
-
-    @model_validator(mode="after")
-    def deduplicate_tags(self) -> "CharacterPrompt":
-        """
-        Deduplicate tags in the prompt and uc fields
-        """
-        if self.prompt:
-            self.prompt = self._deduplicate(self.prompt)
-        if self.uc:
-            self.uc = self._deduplicate(self.uc)
-        return self
-
-    def _deduplicate(self, text: str) -> str:
-        """Helper method to deduplicate tags in a string"""
-        if not text:
-            return text
-
-        tags = [tag.strip() for tag in text.split(",")]
-        tags = [tag for tag in tags if tag]
-        lowercase_to_original = {}
-
-        for tag in tags:
-            lowercase = tag.lower()
-            if lowercase not in lowercase_to_original:
-                lowercase_to_original[lowercase] = tag
-
-        return ", ".join(lowercase_to_original.values())
 
 
 class V4PromptFormat(BaseModel):

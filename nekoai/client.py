@@ -9,15 +9,21 @@ from httpx import AsyncClient, ReadTimeout
 from loguru import logger
 from pydantic import validate_call
 
-from .types import EmotionLevel, EmotionOptions, Image, Metadata, User
+from .types import (
+    EmotionLevel,
+    EmotionOptions,
+    Image,
+    Metadata,
+    User,
+)
 
 if TYPE_CHECKING:
     from .types.director import DirectorRequest
 
-from .constant import HEADERS, Endpoint, Host
+from .constant import HEADERS, Endpoint, Host, Model
 from .exceptions import AuthError, TimeoutError
 from .types.host import HostInstance
-from .utils import ResponseParser, encode_access_key, parse_image
+from .utils import ResponseParser, encode_access_key, get_image_hash, parse_image
 
 
 def running(func) -> callable:
@@ -68,6 +74,7 @@ class NovelAI:
         "auto_close",
         "close_delay",
         "close_task",
+        "vibe_cache",
     ]
 
     def __init__(
@@ -87,6 +94,8 @@ class NovelAI:
         self.auto_close: bool = False
         self.close_delay: float = 300
         self.close_task: Task | None = None
+
+        self.vibe_cache: dict = {}  # Cache for storing vibe tokens
 
     async def init(
         self, timeout: float = 30, auto_close: bool = False, close_delay: float = 300
@@ -242,6 +251,9 @@ class NovelAI:
         # Get the actual host instance (whether from enum or direct HostInstance)
         host_instance = host.value if isinstance(host, Host) else host
 
+        # V4 vibe transfer handling
+        await self.encode_vibe(metadata)
+
         try:
             # Use model_dump_for_api which properly formats the request for different model versions
             payload = metadata.model_dump_for_api()
@@ -334,6 +346,76 @@ class NovelAI:
             data=image_data,
             metadata=None,
         )
+
+    async def encode_vibe(self, metadata: Metadata) -> None:
+        """
+        Encode images to vibe tokens using the /ai/encode-vibe endpoint.
+        Implements caching to avoid unnecessary API calls for previously processed images.
+
+        Parameters
+        ----------
+        metadata: `Metadata`
+            Metadata object containing parameters required for image generation
+
+        Returns
+        -------
+        `None`
+            The function modifies the metadata object in place, adding the encoded vibe tokens
+        """
+        if metadata.model not in [Model.V4, Model.V4_CUR]:
+            return
+
+        if not metadata.reference_image_multiple:
+            return
+
+        reference_image_multiple = []
+
+        # Process each reference image
+        for i, ref_image in enumerate(metadata.reference_image_multiple):
+            ref_info_extracted = (
+                metadata.reference_information_extracted_multiple[i]
+                if metadata.reference_information_extracted_multiple
+                else 1.0
+            )
+
+            # Create a unique hash from the image data for caching
+            image_hash = get_image_hash(ref_image)
+            cache_key = f"{image_hash}:{ref_info_extracted}:{metadata.model.value}"
+
+            # Check if we have this image in cache
+            if cache_key in self.vibe_cache:
+                logger.debug("Using cached vibe token")
+                vibe_token = self.vibe_cache[cache_key]
+            else:
+                logger.debug("Encoding new vibe token")
+                # We need to make an API call to encode the vibe
+                payload = {
+                    "image": ref_image,
+                    "information_extracted": ref_info_extracted,
+                    "model": metadata.model.value,
+                }
+
+                # Use the async client properly
+                response = await self.client.post(
+                    url=f"{Host.WEB.value.url}{Endpoint.ENCODE_VIBE.value}",
+                    json=payload,
+                )
+
+                # Raise an exception if the response is not valid
+                ResponseParser(response).handle_status_code()
+
+                # Get and cache the vibe token
+                vibe_token = response.content
+                self.vibe_cache[cache_key] = vibe_token
+
+            # Add both the original image and its vibe token
+            reference_image_multiple.append(vibe_token)
+
+        # Update metadata with both reference images and their vibe tokens
+        metadata.reference_image_multiple = reference_image_multiple
+
+        # Clean up legacy fields
+        metadata.reference_information_extracted_multiple = None
 
     def handle_decompression(self, compressed_data: bytes) -> bytes:
         """
@@ -461,7 +543,9 @@ class NovelAI:
         return await self.use_director_tool(request)
 
     @running
-    async def colorize(self, image) -> "Image":
+    async def colorize(
+        self, image, prompt: Optional[str] = "", defry: Optional[int] = 0
+    ) -> "Image":
         """
         Colorize a line art or sketch using the Director tool.
 
@@ -473,6 +557,10 @@ class NovelAI:
             - `bytes`: Raw image bytes
             - `io.BytesIO`: BytesIO object containing image data
             - Any file-like object with read() method
+        prompt: str
+            Additional prompt for the request
+        defry: int, optional
+            Strength level of the colorize, defaults to 0
 
         Returns
         -------
@@ -483,7 +571,9 @@ class NovelAI:
 
         width, height, base64_image = parse_image(image)
 
-        request = ColorizeRequest(width=width, height=height, image=base64_image)
+        request = ColorizeRequest(
+            width=width, height=height, image=base64_image, prompt=prompt, defry=defry
+        )
         return await self.use_director_tool(request)
 
     @running

@@ -408,6 +408,6 @@ The package includes several example scripts in the `examples/requests/` directo
 
 [NovelAI Unofficial Knowledgebase](https://naidb.miraheze.org/wiki/Using_the_API)
 
-[Aedial/novelai-api](https://github.com/Aedial/novelai-api)
+[Aedial's novelai-api](https://github.com/Aedial/novelai-api)
 
-[NovelAI-API](https://github.com/HanaokaYuzu/NovelAI-API)
+[HanaokaYuzu's NovelAI-API](https://github.com/HanaokaYuzu/NovelAI-API)
