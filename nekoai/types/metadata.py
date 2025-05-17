@@ -429,7 +429,7 @@ class Metadata(BaseModel):
 
         elif self.model == Model.V4 or self.model == Model.V4_INP:
             if self.ucPreset == 0:
-                uc = ", blurry, lowres, upscaled, artistic error, film grain, scan artifacts, bad anatomy, bad hands, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, @_@, mismatched pupils, glowing eyes, negative space, blank page"
+                uc = ", blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, multiple views, logo, too many watermarks"
             elif self.ucPreset == 1:
                 uc = ", blurry, lowres, error, worst quality, bad quality, jpeg artifacts, very displeasing"
 
