@@ -58,6 +58,9 @@ class Model(Enum):
     # Anime V4 Curated
     V4_CUR = "nai-diffusion-4-curated-preview"
     V4_CUR_INP = "nai-diffusion-4-curated-inpainting"
+    # Anime V4/5 Full
+    V4_5 = "nai-diffusion-4-5-full"
+    V4_5_INP = "nai-diffusion-4-5-full-inpainting"
     # Anime V4/5 Curated
     V4_5_CUR = "nai-diffusion-4-5-curated"
     V4_5_CUR_INP = "nai-diffusion-4-5-curated-inpainting"
@@ -99,6 +102,7 @@ class Sampler(Enum):
     EULER_ANC = "k_euler_ancestral"
     DPM2S_ANC = "k_dpmpp_2s_ancestral"
     DPM2M = "k_dpmpp_2m"
+    DPM2MSDE = 'k_dpmpp_2m_sde'
     DPMSDE = "k_dpmpp_sde"
     DDIM = "ddim_v3"
 

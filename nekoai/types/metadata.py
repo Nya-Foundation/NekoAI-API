@@ -322,6 +322,8 @@ class Metadata(BaseModel):
         if self.model not in [
             Model.V4,
             Model.V4_CUR,
+            Model.V4_5,
+            Model.V4_5_INP,
             Model.V4_5_CUR,
             Model.V4_5_CUR_INP,
             Model.V4_INP,
@@ -358,6 +360,8 @@ class Metadata(BaseModel):
         if self.model not in [
             Model.V4,
             Model.V4_CUR,
+            Model.V4_5,
+            Model.V4_5_INP,
             Model.V4_5_CUR,
             Model.V4_5_CUR_INP,
             Model.V4_INP,
@@ -389,7 +393,7 @@ class Metadata(BaseModel):
 
         quality_tags = ""
 
-        if self.model == Model.V4_5_CUR or self.model == Model.V4_5_CUR_INP:
+        if self.model in [Model.V4_5, Model.V4_5_INP, Model.V4_5_CUR, Model.V4_5_CUR_INP]:
             quality_tags = (
                 ", location, masterpiece, no text, -0.8::feet::, rating:general"
             )
@@ -419,7 +423,7 @@ class Metadata(BaseModel):
         """
         uc = ""
 
-        if self.model == Model.V4_5_CUR or self.model == Model.V4_5_CUR_INP:
+        if self.model in [Model.V4_5, Model.V4_5_INP, Model.V4_5_CUR, Model.V4_5_CUR_INP]:
             if self.ucPreset == 0:
                 uc = ", blurry, lowres, upscaled, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, negative space, blank page"
             elif self.ucPreset == 1:
@@ -500,7 +504,7 @@ class Metadata(BaseModel):
 
         # V4/V4.5 model SMEA handling
         # drop sm and sm_dyn
-        if self.model in [Model.V4, Model.V4_CUR, Model.V4_5_CUR]:
+        if self.model in [Model.V4, Model.V4_CUR, Model.V4_5, Model.V4_5_INP, Model.V4_5_CUR, Model.V4_5_CUR_INP]:
             self.sm = None
             self.sm_dyn = None
 
@@ -549,7 +553,7 @@ class Metadata(BaseModel):
 
         # Handle SMEA factor for both V3 and V4+ models
         smea_factor = 1.0
-        if self.model in [Model.V4, Model.V4_CUR, Model.V4_5_CUR]:
+        if self.model in [Model.V4, Model.V4_CUR, Model.V4_5, Model.V4_5_INP, Model.V4_5_CUR, Model.V4_5_CUR_INP]:
             # V4/V4.5 uses autoSmea
             if self.autoSmea:
                 smea_factor = 1.2
@@ -652,6 +656,8 @@ class Metadata(BaseModel):
             Model.V4_INP,
             Model.V4_CUR,
             Model.V4_CUR_INP,
+            Model.V4_5,
+            Model.V4_5_INP,
             Model.V4_5_CUR,
             Model.V4_5_CUR_INP,
         ]:
