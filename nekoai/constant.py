@@ -49,19 +49,19 @@ class Endpoint(Enum):
 
 
 class Model(Enum):
-    # Anime V3
+    # NAI V3
     V3 = "nai-diffusion-3"
     V3_INP = "nai-diffusion-3-inpainting"
-    # Anime V4
+    # NAI V4 Full
     V4 = "nai-diffusion-4-full"
     V4_INP = "nai-diffusion-4-full-inpainting"
-    # Anime V4 Curated
+    # NAI V4 Curated
     V4_CUR = "nai-diffusion-4-curated-preview"
     V4_CUR_INP = "nai-diffusion-4-curated-inpainting"
-    # Anime V4/5 Full
+    # NAI V4.5 Full
     V4_5 = "nai-diffusion-4-5-full"
     V4_5_INP = "nai-diffusion-4-5-full-inpainting"
-    # Anime V4/5 Curated
+    # NAI V4.5 Curated
     V4_5_CUR = "nai-diffusion-4-5-curated"
     V4_5_CUR_INP = "nai-diffusion-4-5-curated-inpainting"
     # Furry model beta v1.3

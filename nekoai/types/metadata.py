@@ -209,12 +209,15 @@ class Metadata(BaseModel):
     characterPrompts: List[CharacterPrompt] = []
     v4_prompt: Optional[V4PromptFormat] = None
     v4_negative_prompt: Optional[V4NegativePromptFormat] = None
-    skip_cfg_above_sigma: Optional[int] = None
+    skip_cfg_above_sigma: Optional[int] = 19
     use_coords: bool = Field(default=False)
     legacy_uc: bool = Field(default=False)
     normalize_reference_strength_multiple: bool = Field(default=True)
     deliberate_euler_ancestral_bug: bool = Field(default=False)
     prefer_brownian: bool = Field(default=False)
+
+    # only for V4.5 full
+    inpaintImg2ImgStrength: int = None
 
     # Misc
     legacy: bool = False
@@ -283,6 +286,17 @@ class Metadata(BaseModel):
 
         return self
 
+    def handle_inpaint_img2img_strength(self) -> None:
+        """
+        Handle the inpaintImg2ImgStrength field for V4.5 full model.
+        If the model is V4.5 full and inpaintImg2ImgStrength is not set, set it to 1.
+        """
+        if self.model not in [Model.V4_5, Model.V4_5_INP]:
+            return
+
+        if self.inpaintImg2ImgStrength is None:
+            self.inpaintImg2ImgStrength = 1
+
     def hanlde_use_coords(self):
         """
         Validate the use_coords field. If characterPrompts is not empty or coords are not the default (0.5, 0.5),
@@ -321,12 +335,13 @@ class Metadata(BaseModel):
         # skip if model is not V4/V4.5
         if self.model not in [
             Model.V4,
+            Model.V4_INP,
             Model.V4_CUR,
-            Model.V4_5,
-            Model.V4_5_INP,
+            Model.V4_CUR_INP,
             Model.V4_5_CUR,
             Model.V4_5_CUR_INP,
-            Model.V4_INP,
+            Model.V4_5,
+            Model.V4_5_INP,
         ]:
             return
 
@@ -359,12 +374,13 @@ class Metadata(BaseModel):
         # skip if model is not V4/V4.5
         if self.model not in [
             Model.V4,
+            Model.V4_INP,
             Model.V4_CUR,
-            Model.V4_5,
-            Model.V4_5_INP,
+            Model.V4_CUR_INP,
             Model.V4_5_CUR,
             Model.V4_5_CUR_INP,
-            Model.V4_INP,
+            Model.V4_5,
+            Model.V4_5_INP,
         ]:
             return
 
@@ -393,22 +409,25 @@ class Metadata(BaseModel):
 
         quality_tags = ""
 
-        if self.model in [Model.V4_5, Model.V4_5_INP, Model.V4_5_CUR, Model.V4_5_CUR_INP]:
+        if self.model == Model.V4_5 or self.model == Model.V4_5_INP:
+            quality_tags = ", location, very aesthetic, masterpiece, no text"
+
+        elif self.model == Model.V4_5_CUR or self.model == Model.V4_5_CUR_INP:
             quality_tags = (
                 ", location, masterpiece, no text, -0.8::feet::, rating:general"
             )
-        if self.model == Model.V4 or self.model == Model.V4_INP:
+        elif self.model == Model.V4 or self.model == Model.V4_INP:
             quality_tags = ", no text, best quality, very aesthetic, absurdres"
 
-        if self.model == Model.V4_CUR or self.model == Model.V4_CUR_INP:
+        elif self.model == Model.V4_CUR or self.model == Model.V4_CUR_INP:
             quality_tags = (
                 ", rating:general, amazing quality, very aesthetic, absurdres"
             )
 
-        if self.model == Model.V3 or self.model == Model.V3_INP:
+        elif self.model == Model.V3 or self.model == Model.V3_INP:
             quality_tags = ", best quality, amazing quality, very aesthetic, absurdres"
 
-        if self.model == Model.FURRY or self.model == Model.FURRY_INP:
+        elif self.model == Model.FURRY or self.model == Model.FURRY_INP:
             quality_tags = ", {best quality}, {amazing quality}"
 
         self.prompt += quality_tags
@@ -416,6 +435,7 @@ class Metadata(BaseModel):
     def handle_uc_preset(self) -> None:
         """
         Handle the ucPreset in the prompt (might vary by model).
+        V4 models example:
         If ucPreset is 0, append heavy undesired content tags to the negative prompt.
         If ucPreset is 1, append light undesired content tags to the negative prompt.
         If ucPreset is 2, append human focus undesired content tags to the negative prompt.
@@ -423,7 +443,17 @@ class Metadata(BaseModel):
         """
         uc = ""
 
-        if self.model in [Model.V4_5, Model.V4_5_INP, Model.V4_5_CUR, Model.V4_5_CUR_INP]:
+        if self.model == Model.V4_5 or self.model == Model.V4_5_INP:
+            if self.ucPreset == 0:  # Heavy
+                uc = ", nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page"
+            elif self.ucPreset == 1:  # Light
+                uc = ", nsfw, lowres, artistic error, scan artifacts, worst quality, bad quality, jpeg artifacts, multiple views, very displeasing, too many watermarks, negative space, blank page"
+            elif self.ucPreset == 2:  # Furry Focus
+                uc = ", nsfw, {worst quality}, distracting watermark, unfinished, bad quality, {widescreen}, upscale, {sequence}, {{grandfathered content}}, blurred foreground, chromatic aberration, sketch, everyone, [sketch background], simple, [flat colors], ych (character), outline, multiple scenes, [[horror (theme)]], comic"
+            elif self.ucPreset == 3:  # Human Focus
+                uc = ", nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page, @_@, mismatched pupils, glowing eyes, bad anatomy"
+
+        if self.model == Model.V4_5_CUR or self.model == Model.V4_5_CUR_INP:
             if self.ucPreset == 0:
                 uc = ", blurry, lowres, upscaled, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, negative space, blank page"
             elif self.ucPreset == 1:
@@ -433,7 +463,7 @@ class Metadata(BaseModel):
 
         elif self.model == Model.V4 or self.model == Model.V4_INP:
             if self.ucPreset == 0:
-                uc = ", blurry, lowres, upscaled, artistic error, film grain, scan artifacts, bad anatomy, bad hands, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, @_@, mismatched pupils, glowing eyes, negative space, blank page"
+                uc = ", blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, multiple views, logo, too many watermarks"
             elif self.ucPreset == 1:
                 uc = ", blurry, lowres, error, worst quality, bad quality, jpeg artifacts, very displeasing"
 
@@ -484,6 +514,7 @@ class Metadata(BaseModel):
 
         self.handle_v4_prompt()
         self.handle_v4_negative_prompt()
+        self.handle_inpaint_img2img_strength()
 
         # Disable SMEA and SMEA DYN and fill default extra param values for img2img/inpaint
         if self.action == Action.IMG2IMG or self.action == Action.INPAINT:
@@ -656,10 +687,10 @@ class Metadata(BaseModel):
             Model.V4_INP,
             Model.V4_CUR,
             Model.V4_CUR_INP,
-            Model.V4_5,
-            Model.V4_5_INP,
             Model.V4_5_CUR,
             Model.V4_5_CUR_INP,
+            Model.V4_5,
+            Model.V4_5_INP,
         ]:
             if self.v4_prompt:
                 payload["parameters"]["v4_prompt"] = self.v4_prompt.model_dump(
