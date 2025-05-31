@@ -1,0 +1,33 @@
+{
+    "input": "1girl, cute, location, very aesthetic, masterpiece, no text",
+    "model": "nai-diffusion-4-5-full",
+    "action": "img2img",
+    "parameters": {
+        "params_version": 3,
+        "width": 832,
+        "height": 1216,
+        "scale": 5,
+        "sampler": "k_euler_ancestral",
+        "steps": 28,
+        "n_samples": 1,
+        "strength": 0.7,
+        "noise": 0,
+        "ucPreset": 3,
+        "qualityToggle": true,
+        "autoSmea": false,
+        "dynamic_thresholding": false,
+        "controlnet_strength": 1,
+        "legacy": false,
+        "add_original_image": true,
+        "cfg_rescale": 0,
+        "noise_schedule": "karras",
+        "legacy_v3_extend": false,
+        "skip_cfg_above_sigma": 58,
+        "use_coords": false,
+        "legacy_uc": false,
+        "normalize_reference_strength_multiple": true,
+        "inpaintImg2ImgStrength": 1,
+        "seed": 2345676759,
+        "image": "base64_image_data"
+    }
+}
