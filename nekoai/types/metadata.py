@@ -535,7 +535,7 @@ class Metadata(BaseModel):
 
         # V4/V4.5 model SMEA handling
         # drop sm and sm_dyn
-        if self.model in [Model.V4, Model.V4_CUR, Model.V4_5_CUR]:
+        if self.model in [Model.V4, Model.V4_CUR, Model.V4_5, Model.V4_5_INP, Model.V4_5_CUR, Model.V4_5_CUR_INP]:
             self.sm = None
             self.sm_dyn = None
 
@@ -584,7 +584,7 @@ class Metadata(BaseModel):
 
         # Handle SMEA factor for both V3 and V4+ models
         smea_factor = 1.0
-        if self.model in [Model.V4, Model.V4_CUR, Model.V4_5_CUR]:
+        if self.model in [Model.V4, Model.V4_CUR, Model.V4_5, Model.V4_5_INP, Model.V4_5_CUR, Model.V4_5_CUR_INP]:
             # V4/V4.5 uses autoSmea
             if self.autoSmea:
                 smea_factor = 1.2

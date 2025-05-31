@@ -102,6 +102,7 @@ class Sampler(Enum):
     EULER_ANC = "k_euler_ancestral"
     DPM2S_ANC = "k_dpmpp_2s_ancestral"
     DPM2M = "k_dpmpp_2m"
+    DPM2MSDE = 'k_dpmpp_2m_sde'
     DPMSDE = "k_dpmpp_sde"
     DDIM = "ddim_v3"
 
