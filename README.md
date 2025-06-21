@@ -25,6 +25,10 @@
 >
 > Built with asyncio for efficient performance, it provides full access to NovelAI's latest models (V3, V4, V4.5) and Director tools while maintaining a clean, pythonic interface. This project was heavily inspired by [HanaokaYuzu's NovelAI-API](https://github.com/HanaokaYuzu/NovelAI-API), with a focus on providing more features support and enhanced usability.
 
+### 📄 License Change Notice
+
+> **Important**: This project has transitioned from MIT to **AGPL-3.0** license to ensure better compliance and alignment with our inspiration source. As this work builds significantly upon concepts and approaches from HanaokaYuzu's NovelAI-API, we've adopted a more appropriate license that better reflects the collaborative nature of open-source development and provides stronger copyleft protections for the community.
+
 ## 🌟 Core Capabilities
 
 | Feature                      | Description                                                                                       |

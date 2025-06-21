@@ -11,7 +11,7 @@ readme = "README.md"
 authors = [
     {name = "Nya Foundation Team (k3scat)", email = "k3scat@gmail.com"},
 ]
-license = "MIT"
+license = "AGPL-3.0"
 license-files = ["LICENSE"]
 
 classifiers = [
