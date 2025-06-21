@@ -3,12 +3,12 @@
 Example script for generating an image with NovelAI API using the V4.5 curated model.
 Authentication is done with a direct access token.
 """
-
 import asyncio
 import os
 
 from nekoai import NovelAI
 from nekoai.constant import Model, Resolution, Sampler
+from nekoai.types import EventType, MsgpackEvent
 
 
 async def main():
@@ -19,8 +19,7 @@ async def main():
     client = NovelAI(token=token, verbose=True)
 
     try:
-        # Generate an image with V4.5 curated model
-        images = await client.generate_image(
+        async for event in await client.generate_image(
             prompt="1girl, cute",
             negative_prompt="1234",
             ucPreset=3,
@@ -31,15 +30,17 @@ async def main():
             model=Model.V4_5,
             res_preset=Resolution.NORMAL_PORTRAIT,
             sampler=Sampler.EULER_ANC,
-        )
-
-        # Save the generated image(s)
-        for i, image in enumerate(images):
-            # Create output directory if it doesn't exist
+            stream=True,
+        ):
+            event: MsgpackEvent
             os.makedirs("../output", exist_ok=True)
-            # Save the image
-            image.save("../output", f"v4_5_result_{i}.png")
-            print(f"Image saved as output/v4_5_result_{i}.png")
+
+            if event.event_type == EventType.INTERMEDIATE:
+                event.image.save(
+                    "../output", f"image_{event.samp_ix}_step_{event.step_ix:02d}.jpg"
+                )
+            elif event.event_type == EventType.FINAL:
+                event.image.save("../output", f"image_{event.samp_ix}_result.png")
 
     finally:
         # Close the client

@@ -17,9 +17,6 @@ async def main():
     # Initialize client with token authentication
     client = NovelAI(token=token)
 
-    # Initialize with a timeout of 60 seconds
-    await client.init(timeout=60)
-
     try:
         # Load an image file and encode it as base64
         image_path = "../input/example_image.png"  # Replace with your image path

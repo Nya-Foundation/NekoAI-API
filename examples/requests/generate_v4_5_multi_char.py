@@ -8,7 +8,7 @@ import asyncio
 import os
 
 from nekoai import NovelAI
-from nekoai.constant import Model, Noise, Resolution, Sampler
+from nekoai.constant import Model, Resolution, Sampler
 from nekoai.types import CharacterPrompt, PositionCoords
 
 
@@ -18,9 +18,6 @@ async def main():
 
     # Initialize client with token authentication
     client = NovelAI(token=token)
-
-    # Initialize with a timeout of 60 seconds
-    await client.init(timeout=60)
 
     try:
         # Create character prompts for multiple characters
@@ -48,7 +45,6 @@ async def main():
             scale=5,
             sampler=Sampler.EULER_ANC,
             characterPrompts=character_prompts,
-            verbose=True,  # Show Anlas cost
         )
 
         # Save the generated image(s)

@@ -3,7 +3,7 @@ import io
 import zipfile
 from asyncio import Task
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, AsyncGenerator, Optional
 
 from httpx import AsyncClient, ReadTimeout
 from loguru import logger
@@ -14,6 +14,7 @@ from .types import (
     EmotionOptions,
     Image,
     Metadata,
+    MsgpackEvent,
     User,
 )
 
@@ -21,29 +22,16 @@ if TYPE_CHECKING:
     from .types.director import DirectorRequest
 
 from .constant import HEADERS, Endpoint, Host, Model
-from .exceptions import AuthError, TimeoutError
-from .types.host import HostInstance
-from .utils import ResponseParser, encode_access_key, get_image_hash, parse_image
-
-
-def running(func) -> callable:
-    """
-    Decorator to check if client is running before making a request.
-    """
-
-    async def wrapper(self: "NovelAI", *args, **kwargs):
-        if not self.running:
-            await self.init(auto_close=self.auto_close, close_delay=self.close_delay)
-            if self.running:
-                return await func(self, *args, **kwargs)
-
-            raise Exception(
-                f"Invalid function call: NAIClient.{func.__name__}. Client initialization failed."
-            )
-        else:
-            return await func(self, *args, **kwargs)
-
-    return wrapper
+from .exceptions import TimeoutError
+from .utils import (
+    encode_access_key,
+    get_image_hash,
+    handle_msgpack_content,
+    handle_response_with_content,
+    handle_zip_content,
+    parse_image,
+    prep_headers,
+)
 
 
 class NovelAI:
@@ -64,32 +52,37 @@ class NovelAI:
     Notes
     -----
     Either a username/password combination or a token must be provided.
-    """
 
-    __slots__ = [
-        "user",
-        "proxy",
-        "client",
-        "running",
-        "auto_close",
-        "close_delay",
-        "close_task",
-        "vibe_cache",
-    ]
+    Examples
+    --------
+    # Context manager (recommended)
+    async with NovelAI(token="your_token") as client:
+        images = await client.generate_image(prompt="1girl, cute")
+
+    # Manual usage
+    client = NovelAI(token="your_token")
+    images = await client.generate_image(prompt="1girl, cute")
+    # Resources will be cleaned up automatically when client goes out of scope
+    """
 
     def __init__(
         self,
         username: str = None,
         password: str = None,
         token: str = None,
+        host: str = Host.WEB.value,
         proxy: dict | None = None,
+        verbose: bool = False,
     ):
         self.user = User(username=username, password=password, token=token)
         if not self.user.validate_auth():
             raise ValueError("Either username/password or token must be provided")
 
+        self.host = host
         self.proxy = proxy
         self.client: AsyncClient | None = None
+
+        self.verbose: bool = verbose
         self.running: bool = False
         self.auto_close: bool = False
         self.close_delay: float = 300
@@ -113,24 +106,17 @@ class NovelAI:
         close_delay: `float`, optional
             Time to wait before auto-closing the client in seconds. Effective only if `auto_close` is `True`
         """
-        try:
-            self.client = AsyncClient(
-                timeout=timeout, proxy=self.proxy, headers=HEADERS
-            )
-            self.client.headers["Authorization"] = (
-                f"Bearer {await self.get_access_token()}"
-            )
+        self.client = AsyncClient(timeout=timeout, proxy=self.proxy, headers=HEADERS)
+        self.client.headers["Authorization"] = f"Bearer {await self.get_access_token()}"
 
-            self.running = True
-            logger.success("NovelAI client initialized successfully.")
+        self.running = True
+        self.auto_close = auto_close
+        self.close_delay = close_delay
 
-            self.auto_close = auto_close
-            self.close_delay = close_delay
-            if self.auto_close:
-                await self.reset_close_task()
-        except Exception:
-            await self.close()
-            raise
+        if auto_close:
+            await self.reset_close_task()
+
+        logger.success("NovelAI client initialized successfully.")
 
     async def close(self, delay: float = 0) -> None:
         """
@@ -148,7 +134,8 @@ class NovelAI:
             self.close_task.cancel()
             self.close_task = None
 
-        await self.client.aclose()
+        if self.client:
+            await self.client.aclose()
         self.running = False
 
     async def reset_close_task(self) -> None:
@@ -159,6 +146,11 @@ class NovelAI:
             self.close_task.cancel()
             self.close_task = None
         self.close_task = asyncio.create_task(self.close(self.close_delay))
+
+    async def _ensure_initialized(self) -> None:
+        """Ensure the client is initialized before making requests."""
+        if not self.running:
+            await self.init(auto_close=self.auto_close, close_delay=self.close_delay)
 
     async def get_access_token(self) -> str:
         """
@@ -177,49 +169,35 @@ class NovelAI:
         `novelai.exceptions.AuthError`
             If the account credentials are incorrect
         """
-        # Use token directly if provided
         if self.user.token:
             return self.user.token
 
-        # Otherwise authenticate with username/password
         access_key = encode_access_key(self.user)
-
         response = await self.client.post(
-            url=f"{Host.API.value.url}{Endpoint.LOGIN.value}",
-            json={
-                "key": access_key,
-            },
+            url=f"{Host.API.value}{Endpoint.LOGIN.value}",
+            json={"key": access_key},
         )
 
-        # Exceptions are handled in self.init
-        ResponseParser(response).handle_status_code()
-
+        handle_response_with_content(response, response.content)
         return response.json()["accessToken"]
 
-    @running
     @validate_call
     async def generate_image(
         self,
         metadata: Metadata | None = None,
-        host: Host | HostInstance = Host.WEB,
-        verbose: bool = False,
+        stream: bool = False,
         is_opus: bool = False,
         **kwargs,
-    ) -> list[Image]:
+    ) -> list[Image] | AsyncGenerator[MsgpackEvent, None]:
         """
-        Send post request to /ai/generate-image endpoint for image generation.
+        Send post request to /ai/generate-image-stream endpoint for image generation.
 
         Parameters
         ----------
         metadata: `novelai.Metadata`
             Metadata object containing parameters required for image generation
-        host: `Host` or `HostInstance`, optional
-            Host to send the request. Can be:
-            - A predefined host from `novelai.constant.Host` (API or WEB)
-            - A custom host created with `Host.custom(url, accept)`
-            - A direct `HostInstance` object
-        verbose: `bool`, optional
-            If `True`, will log the estimated Anlas cost before sending the request
+        stream: `bool`, optional
+            If `True`, the request will be sent to the streaming endpoint for V4 models and return intermediate steps as they are generated
         is_opus: `bool`, optional
             Use with `verbose` to calculate the cost based on your subscription tier
         **kwargs: `Any`
@@ -227,8 +205,8 @@ class NovelAI:
 
         Returns
         -------
-        `list[novelai.Image]`
-            List of `Image` objects containing the generated image and its metadata
+        `list[novelai.Image]` | `Iterator[novelai.MsgpackEvent]`
+            List of `Image` objects or Iterator of `MsgpackEvent` objects
 
         Raises
         ------
@@ -237,10 +215,12 @@ class NovelAI:
         `novelai.exceptions.AuthError`
             If the access token is incorrect or expired
         """
+        await self._ensure_initialized()
+
         if metadata is None:
             metadata = Metadata(**kwargs)
 
-        if verbose:
+        if self.verbose:
             logger.info(
                 f"Generating image... estimated Anlas cost: {metadata.calculate_cost(is_opus)}"
             )
@@ -248,50 +228,132 @@ class NovelAI:
         if self.auto_close:
             await self.reset_close_task()
 
-        # Get the actual host instance (whether from enum or direct HostInstance)
-        host_instance = host.value if isinstance(host, Host) else host
-
-        # V4 vibe transfer handling
+        # V4 curated vibe transfer handling
         await self.encode_vibe(metadata)
 
         try:
-            # Use model_dump_for_api which properly formats the request for different model versions
             payload = metadata.model_dump_for_api()
+            headers = prep_headers(self.client.headers)
 
-            print(f"Payload: {payload}")
+            if self.verbose:
+                logger.info(f"[Headers] for image generation: {headers}")
+                logger.info(f"[Payload] for image generation: {payload}")
 
-            response = await self.client.post(
-                url=f"{host_instance.url}{Endpoint.IMAGE.value}",
-                json=payload,
-            )
+            is_v4_model = metadata.model.value.startswith("nai-diffusion-4")
+            if is_v4_model:
+                if stream:
+                    return self._stream_v4_events(payload, headers)
+                else:
+                    content = await self._handle_v4_request(payload, headers)
+                    return handle_msgpack_content(content)
+            else:
+                content = await self._handle_v3_request(payload, headers)
+                return handle_zip_content(content)
+
         except ReadTimeout:
             raise TimeoutError(
                 "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
             )
 
-        try:
-            ResponseParser(response).handle_status_code()
-        except AuthError:
-            await self.close()
-            raise
+    async def _handle_v3_request(self, payload: dict, headers: dict) -> bytes:
+        """
+        Handle V3 requests by sending a post request to the /ai/generate-image endpoint.
 
-        assert (
-            response.headers["Content-Type"] == host_instance.accept
-        ), f"Invalid response content type. Expected '{host_instance.accept}', got '{response.headers['Content-Type']}'."
+        Parameters
+        ----------
+        payload: `dict`
+            The request payload containing parameters for image generation
+        headers: `dict`
+            The headers to include in the request, including authorization
 
-        # Use the host name or 'custom' for the filename
-        host_name = host_instance.name.lower()
+        Returns
+        -------
+        `bytes`
+            The response content from the server, expected to be a zip file with images
+        """
+        response = await self.client.post(
+            url=f"{self.host}{Endpoint.IMAGE.value}",
+            headers=headers,
+            json=payload,
+        )
 
-        return [
-            Image(
-                filename=f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{host_name}_p{i}.png",
-                data=data,
-                metadata=metadata,
-            )
-            for i, data in enumerate(ResponseParser(response).parse_zip_content())
-        ]
+        handle_response_with_content(response, response.content)
+        return response.content
 
-    @running
+    async def _handle_v4_request(self, payload: dict, headers: dict) -> bytes:
+        """
+        Handle V4 requests by sending a post request to the /ai/generate-image-stream endpoint.
+
+        Parameters
+        ----------
+        payload: `dict`
+            The request payload containing parameters for image generation
+        headers: `dict`
+            The headers to include in the request, including authorization
+
+        Returns
+        -------
+        `bytes`
+            The response content from the server, expected to be msgpack data
+        """
+        async with self.client.stream(
+            "POST",
+            url=f"{self.host}{Endpoint.IMAGE_STREAM.value}",
+            headers=headers,
+            json=payload,
+        ) as response:
+            # Check response status first
+            if response.status_code != 200:
+                content = await response.aread()
+                handle_response_with_content(response, content)
+
+            raw_data = b""
+            # Collect all chunks
+            async for chunk in response.aiter_bytes():
+                raw_data += chunk
+
+            return raw_data
+
+    async def _stream_v4_events(
+        self, payload: dict, headers: dict
+    ) -> AsyncGenerator[MsgpackEvent, None]:
+        """
+        Stream V4 events in real-time as they arrive from the server.
+
+        Parameters
+        ----------
+        payload: `dict`
+            The request payload containing parameters for image generation
+        headers: `dict`
+            The headers to include in the request, including authorization
+
+        Yields
+        ------
+        `MsgpackEvent`
+            Individual msgpack events as they are received and parsed
+        """
+        from .utils import StreamingMsgpackParser
+
+        async with self.client.stream(
+            "POST",
+            url=f"{self.host}{Endpoint.IMAGE_STREAM.value}",
+            headers=headers,
+            json=payload,
+        ) as response:
+            # Check response status first
+            if response.status_code != 200:
+                content = await response.aread()
+                handle_response_with_content(response, content)
+
+            # Create parser for real-time msgpack parsing
+            parser = StreamingMsgpackParser()
+
+            # Process chunks as they arrive
+            async for chunk in response.aiter_bytes():
+                # Feed chunk to parser and yield any complete events
+                async for event in parser.feed_chunk(chunk):
+                    yield event
+
     async def use_director_tool(self, request: "DirectorRequest") -> "Image":
         """
         Send request to /ai/augment-image endpoint for using NovelAI's Director tools.
@@ -313,26 +375,24 @@ class NovelAI:
         `novelai.exceptions.AuthError`
             If the access token is incorrect or expired
         """
+        await self._ensure_initialized()
+
         if self.auto_close:
             await self.reset_close_task()
 
-        host_instance = Host.WEB.value
         try:
-            json_data = request.model_dump(mode="json", exclude_none=True)
+            payload = request.model_dump(mode="json", exclude_none=True)
             response = await self.client.post(
-                url=f"{host_instance.url}{Endpoint.DIRECTOR.value}",
-                json=json_data,
+                url=f"{self.host}{Endpoint.DIRECTOR.value}",
+                headers=prep_headers(self.client.headers),
+                json=payload,
             )
         except ReadTimeout:
             raise TimeoutError(
                 "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
             )
 
-        try:
-            ResponseParser(response).handle_status_code()
-        except AuthError:
-            await self.close()
-            raise
+        handle_response_with_content(response, response.content)
 
         if not response.content:
             logger.error("Received empty response from the server.")
@@ -362,10 +422,7 @@ class NovelAI:
         `None`
             The function modifies the metadata object in place, adding the encoded vibe tokens
         """
-        if metadata.model not in [Model.V4, Model.V4_CUR]:
-            return
-
-        if not metadata.reference_image_multiple:
+        if metadata.model != Model.V4_CUR or not metadata.reference_image_multiple:
             return
 
         reference_image_multiple = []
@@ -397,12 +454,12 @@ class NovelAI:
 
                 # Use the async client properly
                 response = await self.client.post(
-                    url=f"{Host.WEB.value.url}{Endpoint.ENCODE_VIBE.value}",
+                    url=f"{Host.WEB.value}{Endpoint.ENCODE_VIBE.value}",
                     json=payload,
                 )
 
                 # Raise an exception if the response is not valid
-                ResponseParser(response).handle_status_code()
+                handle_response_with_content(response, response.content)
 
                 # Get and cache the vibe token
                 vibe_token = response.content
@@ -423,7 +480,7 @@ class NovelAI:
 
         Parameters
         ----------
-        response: `bytes`
+        compressed_data: `bytes`
             The response content to decompress
 
         Returns
@@ -432,12 +489,9 @@ class NovelAI:
             The decompressed response content
         """
         with zipfile.ZipFile(io.BytesIO(compressed_data)) as zf:
-
-            # List the contents to see what files are inside
             file_names = zf.namelist()
             return zf.read(file_names[0])
 
-    @running
     async def lineart(self, image) -> "Image":
         """
         Convert an image to line art using the Director tool.
@@ -463,7 +517,6 @@ class NovelAI:
         request = LineArtRequest(width=width, height=height, image=base64_image)
         return await self.use_director_tool(request)
 
-    @running
     async def sketch(self, image) -> "Image":
         """
         Convert an image to sketch using the Director tool.
@@ -488,7 +541,6 @@ class NovelAI:
         request = SketchRequest(width=width, height=height, image=base64_image)
         return await self.use_director_tool(request)
 
-    @running
     async def background_removal(self, image) -> "Image":
         """
         Remove background from an image using the Director tool.
@@ -516,7 +568,6 @@ class NovelAI:
         )
         return await self.use_director_tool(request)
 
-    @running
     async def declutter(self, image) -> "Image":
         """
         Declutter an image using the Director tool.
@@ -542,7 +593,6 @@ class NovelAI:
         request = DeclutterRequest(width=width, height=height, image=base64_image)
         return await self.use_director_tool(request)
 
-    @running
     async def colorize(
         self, image, prompt: Optional[str] = "", defry: Optional[int] = 0
     ) -> "Image":
@@ -576,7 +626,6 @@ class NovelAI:
         )
         return await self.use_director_tool(request)
 
-    @running
     async def change_emotion(
         self,
         image,
@@ -627,3 +676,23 @@ class NovelAI:
             emotion_level=emotion_level,
         )
         return await self.use_director_tool(request)
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        await self._ensure_initialized()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit - automatically clean up resources."""
+        await self.close()
+
+    def __del__(self):
+        """Cleanup resources when object is garbage collected."""
+        if self.client and not self.client.is_closed:
+            # Schedule cleanup in the event loop if one exists
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    loop.create_task(self.close())
+            except RuntimeError:
+                pass

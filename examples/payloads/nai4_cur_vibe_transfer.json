@@ -1,0 +1,56 @@
+{
+    "action": "generate",
+    "input": "1girl, cute,, rating:general, best quality, very aesthetic, absurdres",
+    "model": "nai-diffusion-4-curated-preview",
+    "parameters": {
+        "add_original_image": true,
+        "autoSmea": true,
+        "cfg_rescale": 1,
+        "characterPrompts": [],
+        "controlnet_strength": 1,
+        "deliberate_euler_ancestral_bug": false,
+        "dynamic_thresholding": false,
+        "height": 1216,
+        "inpaintImg2ImgStrength": 1,
+        "legacy": false,
+        "legacy_uc": false,
+        "legacy_v3_extend": false,
+        "n_samples": 1,
+        "negative_prompt": "blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, logo, dated, signature, multiple views, gigantic breasts, white blank page, blank page, 1234",
+        "noise_schedule": "karras",
+        "normalize_reference_strength_multiple": false,
+        "params_version": 3,
+        "prefer_brownian": true,
+        "qualityToggle": true,
+        "reference_image_multiple": [
+            "base54_encoded_vibe_token"
+        ],
+        "reference_strength_multiple": [
+            0.6
+        ],
+        "sampler": "k_euler_ancestral",
+        "scale": 4.6,
+        "seed": 3387513575,
+        "skip_cfg_above_sigma": null,
+        "steps": 30,
+        "stream": "msgpack",
+        "ucPreset": 0,
+        "use_coords": true,
+        "v4_negative_prompt": {
+            "caption": {
+                "base_caption": "blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, logo, dated, signature, multiple views, gigantic breasts, white blank page, blank page, 1234",
+                "char_captions": []
+            },
+            "legacy_uc": false
+        },
+        "v4_prompt": {
+            "caption": {
+                "base_caption": "1girl, cute,, rating:general, best quality, very aesthetic, absurdres",
+                "char_captions": []
+            },
+            "use_coords": true,
+            "use_order": true
+        },
+        "width": 832
+    }
+}

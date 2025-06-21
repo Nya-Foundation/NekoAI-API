@@ -18,9 +18,6 @@ async def main():
     # Initialize client with token authentication
     client = NovelAI(token=token)
 
-    # Initialize with a timeout of 60 seconds
-    await client.init(timeout=60)
-
     try:
         # Generate an image with V4 curated model
         images = await client.generate_image(
@@ -33,7 +30,6 @@ async def main():
             params_version=3,  # V4 models need params_version=3
             noise_schedule=Noise.KARRAS,
             uc_preset=2,
-            verbose=True,  # Show Anlas cost
         )
 
         # Save the generated image(s)

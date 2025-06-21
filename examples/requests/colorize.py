@@ -18,9 +18,6 @@ async def main():
     # Initialize client with token authentication
     client = NovelAI(token=token)
 
-    # Initialize with a timeout of 60 seconds
-    await client.init(timeout=60)
-
     try:
         # Load a line art image file and encode it as base64
         image_path = "../input/lineart.png"  # Replace with your line art image path
