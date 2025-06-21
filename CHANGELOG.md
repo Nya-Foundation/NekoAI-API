@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.3.0 (2025-06-21)
+
+### Bug Fixes
+
+- Lisence change from MIT to AGPL-3.0
+  ([`c88a44a`](https://github.com/Nya-Foundation/NekoAI-API/commit/c88a44adf31ebea52aab70dd5427058188cbea40))
+
+### Features
+
+- Add support for generate-image-stream endpoint and stream mode, better bot detection evasion
+  ([`8651501`](https://github.com/Nya-Foundation/NekoAI-API/commit/86515011b031e2449d2de4b9dae88066d11d2789))
+
+
 ## v0.2.1 (2025-05-31)
 
 
