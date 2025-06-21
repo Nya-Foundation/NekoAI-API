@@ -11,7 +11,7 @@ readme = "README.md"
 authors = [
     {name = "Nya Foundation Team (k3scat)", email = "k3scat@gmail.com"},
 ]
-license = "MIT"
+license = "AGPL-3.0"
 license-files = ["LICENSE"]
 
 classifiers = [
@@ -29,6 +29,7 @@ dependencies = [
     "pydantic>=2.5.3",
     "loguru>=0.7.2",
     "argon2-cffi>=21.3.0",
+    "msgpack>=1.1.0",
 ]
 
 [project.urls]

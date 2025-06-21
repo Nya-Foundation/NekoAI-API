@@ -1,49 +1,50 @@
 {
-    "input": "1girl, cute, location, very aesthetic, masterpiece, no text",
-    "model": "nai-diffusion-4-5-full",
     "action": "generate",
+    "input": "1girl, cute, very aesthetic, masterpiece, no text",
+    "model": "nai-diffusion-4-5-full",
     "parameters": {
-        "params_version": 3,
-        "width": 832,
-        "height": 1216,
-        "scale": 5,
-        "sampler": "k_euler_ancestral",
-        "steps": 28,
-        "n_samples": 1,
-        "ucPreset": 3,
-        "qualityToggle": true,
-        "autoSmea": false,
-        "dynamic_thresholding": false,
-        "controlnet_strength": 1,
-        "legacy": false,
         "add_original_image": true,
+        "autoSmea": false,
         "cfg_rescale": 0,
-        "noise_schedule": "karras",
-        "legacy_v3_extend": false,
-        "skip_cfg_above_sigma": 58,
-        "use_coords": false,
-        "legacy_uc": false,
-        "normalize_reference_strength_multiple": true,
-        "inpaintImg2ImgStrength": 1,
-        "seed": 137110152,
         "characterPrompts": [],
+        "controlnet_strength": 1,
+        "deliberate_euler_ancestral_bug": false,
+        "dynamic_thresholding": false,
+        "height": 1216,
+        "inpaintImg2ImgStrength": 1,
+        "legacy": false,
+        "legacy_uc": false,
+        "legacy_v3_extend": false,
+        "n_samples": 1,
+        "negative_prompt": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page, @_@, mismatched pupils, glowing eyes, bad anatomy, 1234",
+        "noise_schedule": "karras",
+        "normalize_reference_strength_multiple": true,
+        "params_version": 3,
+        "prefer_brownian": true,
+        "qualityToggle": true,
+        "sampler": "k_euler_ancestral",
+        "scale": 5,
+        "seed": 3417044607,
+        "skip_cfg_above_sigma": null,
+        "steps": 30,
+        "stream": "msgpack",
+        "ucPreset": 3,
+        "use_coords": false,
+        "v4_negative_prompt": {
+            "caption": {
+                "base_caption": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page, @_@, mismatched pupils, glowing eyes, bad anatomy, 1234",
+                "char_captions": []
+            },
+            "legacy_uc": false
+        },
         "v4_prompt": {
             "caption": {
-                "base_caption": "1girl, cute, location, very aesthetic, masterpiece, no text",
+                "base_caption": "1girl, cute, very aesthetic, masterpiece, no text",
                 "char_captions": []
             },
             "use_coords": false,
             "use_order": true
         },
-        "v4_negative_prompt": {
-            "caption": {
-                "base_caption": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page, @_@, mismatched pupils, glowing eyes, bad anatomy",
-                "char_captions": []
-            },
-            "legacy_uc": false
-        },
-        "negative_prompt": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page, @_@, mismatched pupils, glowing eyes, bad anatomy",
-        "deliberate_euler_ancestral_bug": false,
-        "prefer_brownian": true
+        "width": 832
     }
 }

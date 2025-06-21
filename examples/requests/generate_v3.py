@@ -19,12 +19,6 @@ async def main():
     # Initialize client with token authentication
     client = NovelAI(token=token)
 
-    # Initialize client with token authentication
-    client = NovelAI(token=token)
-
-    # Initialize with a timeout of 60 seconds
-    await client.init(timeout=60)
-
     try:
         # Generate an image
         images = await client.generate_image(
@@ -35,7 +29,6 @@ async def main():
             scale=6.3,
             sampler=Sampler.DPM2S_ANC,
             noise_schedule=Noise.KARRAS,
-            verbose=True,  # Show Anlas cost
         )
 
         # Save the generated image(s)
