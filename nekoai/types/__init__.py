@@ -7,8 +7,7 @@ from .director import (
     EmotionRequest,
     LineArtRequest,
 )
-from .host import HostInstance
-from .image import Image
+from .image import EventType, Image, MsgpackEvent
 from .metadata import Metadata
 from .parameters import (
     CharacterCaption,
@@ -22,6 +21,8 @@ from .user import User
 __all__ = [
     "User",
     "Image",
+    "MsgpackEvent",
+    "EventType",
     "Metadata",
     "DirectorRequest",
     "LineArtRequest",

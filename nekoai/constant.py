@@ -1,49 +1,36 @@
 from enum import Enum
 
-from .types.host import HostInstance
-
 HEADERS = {
+    "Accept": "*/*",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Accept-Encoding": "gzip, deflate, br",
     "Content-Type": "application/json",
+    "Host": "image.novelai.net",
     "Origin": "https://novelai.net",
     "Referer": "https://novelai.net",
+    "DHT": "1",
+    "Sec-GPC": "1",
+    "Connection": "keep-alive",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+    "Priority": "u=0",
+    "Pragma": "no-cache",
+    "Cache-Control": "no-cache",
+    "TE": "trailers",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0",
 }
 
 
 class Host(Enum):
-    API = HostInstance(
-        url="https://api.novelai.net", accept="application/x-zip-compressed", name="api"
-    )
-    WEB = HostInstance(
-        url="https://image.novelai.net", accept="binary/octet-stream", name="web"
-    )
-
-    @staticmethod
-    def custom(url: str, accept: str, name: str = "custom") -> HostInstance:
-        """
-        Create a custom host instance.
-
-        Parameters
-        ----------
-        url: `str`
-            URL of the host
-        accept: `str`
-            Expected Content-Type of the response
-        name: `str`, optional
-            Name of the host (used for image filenames), defaults to "custom"
-
-        Returns
-        -------
-        `HostInstance`
-            Custom host instance
-        """
-        return HostInstance(url=url, accept=accept, name=name)
+    WEB = "https://image.novelai.net"
+    API = "https://api.novelai.net"
 
 
 class Endpoint(Enum):
     LOGIN = "/user/login"
-    USERDATA = "/user/data"
     IMAGE = "/ai/generate-image"
+    IMAGE_STREAM = "/ai/generate-image-stream"
     DIRECTOR = "/ai/augment-image"
     ENCODE_VIBE = "/ai/encode-vibe"
 
@@ -67,6 +54,20 @@ class Model(Enum):
     # Furry model beta v1.3
     FURRY = "nai-diffusion-furry-3"
     FURRY_INP = "nai-diffusion-furry-3-inpainting"
+
+
+def is_v4_model(model: Model) -> bool:
+    """Check if the model is a V4 model."""
+    return model in (
+        Model.V4,
+        Model.V4_INP,
+        Model.V4_CUR,
+        Model.V4_CUR_INP,
+        Model.V4_5,
+        Model.V4_5_INP,
+        Model.V4_5_CUR,
+        Model.V4_5_CUR_INP,
+    )
 
 
 class Controlnet(Enum):
@@ -103,6 +104,7 @@ class Sampler(Enum):
     DPM2S_ANC = "k_dpmpp_2s_ancestral"
     DPM2M = "k_dpmpp_2m"
     DPMSDE = "k_dpmpp_sde"
+    DPM2MSDE = "k_dpmpp_2m_sde"
     DDIM = "ddim_v3"
 
 

@@ -1,9 +1,7 @@
+from enum import StrEnum
 from pathlib import Path
-from typing import Optional
 
 from pydantic import BaseModel
-
-from .metadata import Metadata
 
 
 class Image(BaseModel):
@@ -13,7 +11,6 @@ class Image(BaseModel):
 
     filename: str
     data: bytes
-    metadata: Optional[Metadata] = None
 
     def __str__(self):
         return f"Image(filename={self.filename})"
@@ -38,3 +35,32 @@ class Image(BaseModel):
         self.filename = filename or self.filename
         dest = path / self.filename
         dest.write_bytes(self.data)
+
+
+class EventType(StrEnum):
+    """
+    Enum for event types in the msgpack event.
+    """
+
+    INTERMEDIATE = "intermediate"
+    FINAL = "final"
+
+
+class MsgpackEvent(BaseModel):
+    """
+    A single msgpack event object in the return of `generate_image` method or director tools.
+    """
+
+    event_type: EventType
+    samp_ix: int
+    step_ix: int
+    gen_id: str
+    sigma: float
+
+    # event_type: intermediate: jpeg image, final: png image
+    image: Image
+
+    def __str__(self):
+        return f"MsgpackEvent(event_type={self.event_type}, step_ix={self.step_ix}, gen_id={self.gen_id})"
+
+    __repr__ = __str__
