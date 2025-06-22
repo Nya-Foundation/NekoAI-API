@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.3.1 (2025-06-22)
+
+### Bug Fixes
+
+- Round width and height is non-valid
+  ([`9921604`](https://github.com/Nya-Foundation/NekoAI-API/commit/99216042e9598d79cea07b2392815f02b7400fcf))
+
+
 ## v0.3.0 (2025-06-21)
 
 ### Bug Fixes
