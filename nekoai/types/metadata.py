@@ -300,6 +300,26 @@ class Metadata(BaseModel):
 
         return self
 
+    def handle_resolution(self):
+        """
+        Handle the resolution preset. If width and height are not set, use the resolution preset.
+        If width and height are set, override the resolution preset.
+        if width or height are not multiple of 64, round them to the nearest multiple of 64.
+        if the product of the width and height is not in the allowed range (64-3047424), raise ValueError.
+        """
+
+        if self.width is None or self.height is None:
+            self.width, self.height = self.res_preset.value
+        else:
+            # Round width and height to the nearest multiple of 64
+            self.width = (self.width + 63) // 64 * 64
+            self.height = (self.height + 63) // 64 * 64
+
+        if not self.width * self.height in range(64 * 64, 3047424 + 1):
+            raise ValueError(
+                f"The maximum allowed total resolution is (3047424 px), got {self.width}x{self.height}={self.width * self.height}."
+            )
+
     def handle_stream(self):
         if is_v4_model(self.model) and self.action == Action.GENERATE:
             self.stream = "msgpack"
@@ -500,8 +520,7 @@ class Metadata(BaseModel):
         Implement this method to add custom initialization logic.
         """
         # Fall back to resolution preset if width and height are not provided
-        self.width = self.width or self.res_preset.value[0]
-        self.height = self.height or self.res_preset.value[1]
+        self.handle_resolution()
 
         # Append quality tags to prompt
         self.handle_quality_tags()
