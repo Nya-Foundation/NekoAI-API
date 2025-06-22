@@ -28,7 +28,8 @@ async def main():
             steps=30,
             n_samples=1,
             model=Model.V4_5,
-            res_preset=Resolution.NORMAL_PORTRAIT,
+            height=936,
+            width=1400,
             sampler=Sampler.EULER_ANC,
             stream=True,
         ):
