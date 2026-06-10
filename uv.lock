@@ -88,6 +88,7 @@ wheels = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "brotli"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -171,6 +172,8 @@ wheels = [
 ]
 
 [[package]]
+=======
+>>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
 name = "certifi"
 version = "2026.5.20"
 source = { registry = "https://pypi.org/simple" }
@@ -319,12 +322,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad", size = 73517, upload-time = "2024-12-06T15:37:21.509Z" },
 ]
 
+<<<<<<< HEAD
 [package.optional-dependencies]
 brotli = [
     { name = "brotli", marker = "platform_python_implementation == 'CPython'" },
     { name = "brotlicffi", marker = "platform_python_implementation != 'CPython'" },
 ]
 
+=======
+>>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
 [[package]]
 name = "idna"
 version = "3.18"
@@ -344,6 +350,7 @@ wheels = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "isort"
 version = "8.0.1"
 source = { registry = "https://pypi.org/simple" }
@@ -353,6 +360,8 @@ wheels = [
 ]
 
 [[package]]
+=======
+>>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
 name = "loguru"
 version = "0.7.3"
 source = { registry = "https://pypi.org/simple" }
@@ -432,7 +441,11 @@ version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "argon2-cffi" },
+<<<<<<< HEAD
     { name = "httpx", extra = ["brotli"] },
+=======
+    { name = "httpx" },
+>>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
     { name = "loguru" },
     { name = "msgpack" },
     { name = "pydantic" },
@@ -440,7 +453,10 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+<<<<<<< HEAD
     { name = "isort" },
+=======
+>>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
@@ -449,7 +465,11 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "argon2-cffi", specifier = ">=21.3.0" },
+<<<<<<< HEAD
     { name = "httpx", extras = ["brotli"], specifier = ">=0.25.2" },
+=======
+    { name = "httpx", specifier = ">=0.25.2" },
+>>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
     { name = "loguru", specifier = ">=0.7.2" },
     { name = "msgpack", specifier = ">=1.1.0" },
     { name = "pydantic", specifier = ">=2.5.3" },
@@ -457,7 +477,10 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+<<<<<<< HEAD
     { name = "isort", specifier = ">=8.0.1" },
+=======
+>>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "ruff", specifier = ">=0.8" },
