@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import Enum
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -37,7 +37,7 @@ class Image(BaseModel):
         dest.write_bytes(self.data)
 
 
-class EventType(StrEnum):
+class EventType(str, Enum):
     """
     Enum for event types in the msgpack event.
     """

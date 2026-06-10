@@ -1,6 +1,6 @@
-from typing import Literal, Optional
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .constant import EmotionLevel, EmotionOptions
 
@@ -29,13 +29,12 @@ class DirectorRequest(BaseModel):
     width: int = Field(..., description="Image width in pixels")
     height: int = Field(..., description="Image height in pixels")
     image: str = Field(..., description="Base64-encoded image")
-    prompt: Optional[str] = Field(
+    prompt: str | None = Field(
         default="", description="Optional text prompt for tools like emotion"
     )
     defry: int = Field(default=0, description="Optional defry parameter")
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class LineArtRequest(DirectorRequest):
@@ -73,7 +72,7 @@ class ColorizeRequest(DirectorRequest):
         width: int,
         height: int,
         image: str,
-        prompt: Optional[str] = "",
+        prompt: str | None = "",
         defry: int = 0,
     ) -> "ColorizeRequest":
         """
@@ -120,7 +119,7 @@ class EmotionRequest(DirectorRequest):
         height: int,
         image: str,
         emotion: EmotionOptions,
-        prompt: Optional[str] = "",
+        prompt: str | None = "",
         emotion_level: EmotionLevel = EmotionLevel.NORMAL,
     ) -> "EmotionRequest":
         """

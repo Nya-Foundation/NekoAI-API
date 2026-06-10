@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import BaseModel
 
 
@@ -9,9 +7,9 @@ class User(BaseModel):
     Can be initialized with either username/password pair or a direct token.
     """
 
-    username: Optional[str] = None
-    password: Optional[str] = None
-    token: Optional[str] = None
+    username: str | None = None
+    password: str | None = None
+    token: str | None = None
 
     def __str__(self):
         if self.username:
