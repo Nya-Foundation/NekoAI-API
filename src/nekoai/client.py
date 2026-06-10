@@ -269,10 +269,6 @@ class NovelAI:
                     return self._stream_v4_events(payload, headers)
                 else:
                     content = await self._handle_v4_request(payload, headers)
-                    # Some V4 actions (e.g. img2img) answer with a zip even on
-                    # the stream endpoint; detect the format instead of assuming
-                    if content.startswith(b"PK"):
-                        return handle_zip_content(content)
                     return handle_msgpack_content(content)
             else:
                 content = await self._handle_v3_request(payload, headers)
