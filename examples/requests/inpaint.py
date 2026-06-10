@@ -11,8 +11,7 @@ import asyncio
 import os
 import sys
 
-from nekoai import Action, Model, NovelAI
-from nekoai.utils import parse_image
+from nekoai import Action, Model, NovelAI, parse_image
 
 if len(sys.argv) < 3:
     sys.exit("usage: inpaint.py <image> <mask>")

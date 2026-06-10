@@ -2,13 +2,13 @@
 
 import io
 import json
+import logging
 import struct
 import zipfile
 from collections.abc import Generator
 from datetime import datetime
 
 import msgpack
-from loguru import logger
 
 from .exceptions import (
     APIError,
@@ -19,6 +19,8 @@ from .exceptions import (
     NovelAIError,
 )
 from .types import EventType, Image, MsgpackEvent
+
+logger = logging.getLogger(__name__)
 
 
 def handle_response_with_content(response, content: bytes) -> None:

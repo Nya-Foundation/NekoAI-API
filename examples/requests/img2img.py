@@ -9,8 +9,7 @@ import asyncio
 import os
 import sys
 
-from nekoai import Action, Model, NovelAI
-from nekoai.utils import parse_image
+from nekoai import Action, Model, NovelAI, parse_image
 
 IMAGE = sys.argv[1] if len(sys.argv) > 1 else "examples/input/example_image.png"
 

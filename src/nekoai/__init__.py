@@ -19,6 +19,7 @@ from .exceptions import (
     NovelAIError,
     TimeoutError,
 )
+from .imaging import parse_image
 from .types import (
     CharacterPrompt,
     EmotionLevel,
@@ -34,6 +35,7 @@ __all__ = [
     "__version__",
     "NovelAI",
     "Metadata",
+    "parse_image",
     # enums
     "Action",
     "Controlnet",
