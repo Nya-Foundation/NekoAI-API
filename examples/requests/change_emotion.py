@@ -1,47 +1,28 @@
 #!/usr/bin/env python3
-"""
-Example script for using the emotion change director tool with NovelAI API.
-Authentication is done with a direct access token.
+"""Change a character's emotion with NovelAI's Director tool.
+
+Usage: uvrun examples/requests/change_emotion.py [path/to/image]
+Requires the NAI_TOKEN environment variable (e.g. via .env).
 """
 
 import asyncio
 import os
+import sys
 
-from nekoai import NovelAI
-from nekoai.types import EmotionLevel, EmotionOptions
+from nekoai import EmotionLevel, EmotionOptions, NovelAI
+
+IMAGE = sys.argv[1] if len(sys.argv) > 1 else "examples/input/example_image.png"
 
 
 async def main():
-    # Use your NAI token (replace with your actual token)
-    token = os.environ.get("NAI_TOKEN")
-
-    # Initialize client with token authentication
-    client = NovelAI(token=token)
-
-    try:
-        # Load an image file and encode it as base64
-        image_path = "../input/example_image.png"  # Replace with your image path
-
-        # Declutter the image
-        result = await client.declutter(image=image_path)
-
-        # Change the emotion in the image
-        # Going from NEUTRAL to HAPPY emotion with NORMAL emotion level
+    async with NovelAI(token=os.environ["NAI_TOKEN"]) as client:
         result = await client.change_emotion(
-            image=image_path,
-            emotion=EmotionOptions.ANGRY,
-            prompt="happy",
+            IMAGE,
+            emotion=EmotionOptions.HAPPY,
             emotion_level=EmotionLevel.NORMAL,
         )
-
-        # Save the result
-        os.makedirs("../output", exist_ok=True)
-        result.save("../output", "angry_emotion_result.png")
-        print("Emotion changed image saved as ../output/angry_emotion_result.png")
-
-    finally:
-        # Close the client
-        await client.close()
+        result.save("output", "emotion_happy.png")
+        print("Saved output/emotion_happy.png")
 
 
 if __name__ == "__main__":

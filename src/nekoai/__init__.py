@@ -15,6 +15,7 @@ from .exceptions import (
     AuthError,
     ConcurrentError,
     ImageProcessingError,
+    NotEnoughCreditsError,
     NovelAIError,
     TimeoutError,
 )
@@ -56,5 +57,6 @@ __all__ = [
     "AuthError",
     "ConcurrentError",
     "ImageProcessingError",
+    "NotEnoughCreditsError",
     "TimeoutError",
 ]

@@ -1,48 +1,28 @@
 #!/usr/bin/env python3
-"""
-Example script for generating an image with NovelAI API using the V4 curated model.
-Authentication is done with a direct access token.
+"""Generate an image with the V4 full model.
+
+Usage: uvrun examples/requests/generate_v4.py
+Requires the NAI_TOKEN environment variable (e.g. via .env).
 """
 
 import asyncio
 import os
 
-from nekoai import NovelAI
-from nekoai.constant import Model, Noise, Resolution, Sampler
+from nekoai import Model, NovelAI, Resolution
 
 
 async def main():
-    # Use your NAI token (replace with your actual token)
-    token = os.environ.get("NAI_TOKEN")
-
-    # Initialize client with token authentication
-    client = NovelAI(token=token)
-
-    try:
-        # Generate an image with V4 curated model
+    async with NovelAI(token=os.environ["NAI_TOKEN"]) as client:
         images = await client.generate_image(
-            prompt="1 girl, cute",
+            prompt="1girl, silver hair, blue eyes, white dress, flower garden",
             model=Model.V4,
             res_preset=Resolution.NORMAL_PORTRAIT,
-            steps=28,
-            scale=6.0,
-            sampler=Sampler.EULER_ANC,
-            params_version=3,  # V4 models need params_version=3
-            noise_schedule=Noise.KARRAS,
-            uc_preset=2,
+            seed=424242,
         )
 
-        # Save the generated image(s)
-        for i, image in enumerate(images):
-            # Create output directory if it doesn't exist
-            os.makedirs("../output", exist_ok=True)
-            # Save the image
-            image.save("../output", f"v4_result_{i}.png")
-            print(f"Image saved as ../output/v4_result_{i}.png")
-
-    finally:
-        # Close the client
-        await client.close()
+        for image in images:
+            image.save("output", "generate_v4.png")
+            print(f"Saved output/{image.filename}")
 
 
 if __name__ == "__main__":

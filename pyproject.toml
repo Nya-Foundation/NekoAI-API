@@ -25,7 +25,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "httpx>=0.25.2",
+    "httpx[brotli]>=0.25.2",
     "pydantic>=2.5.3",
     "loguru>=0.7.2",
     "argon2-cffi>=21.3.0",
