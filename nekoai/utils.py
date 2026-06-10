@@ -73,7 +73,7 @@ def generate_x_initiated_at():
 
 
 def prep_headers(headers: dict[str, str]) -> dict[str, str]:
-
+    headers = dict(headers)
     headers["x-correlation-id"] = generate_x_correlation_id()
     headers["x-initiated-at"] = generate_x_initiated_at()
     return headers
@@ -156,7 +156,7 @@ def _get_bytes_from_string(string_input: str) -> bytes:
     """Extract bytes from a string input (base64 or file path)."""
     import os
 
-    # Check if it's already a base64 string
+    # Check if it's already a base64 string with data URL prefix
     if string_input.startswith("data:image/"):
         # Extract the base64 part after the comma
         base64_encoded = string_input.split(",", 1)[1]
@@ -302,42 +302,37 @@ def handle_response_with_content(response, content: bytes):
     ------
     Various exceptions based on status code and content
     """
-    content_type = response.headers.get("content-type", "").lower()
+    status_code = response.status_code
+    if status_code < 400:
+        return
 
-    # Check if we have an error based on content-type
-    if content_type == "application/json":
-        # Parse error message from JSON
-        try:
-            error_data = json.loads(content.decode("utf-8"))
-            error_message = json.dumps(error_data, indent=2)
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            error_message = (
-                f"Unable to parse error response. Raw content: {content[:500]}"
-            )
+    try:
+        error_data = json.loads(content.decode("utf-8"))
+        error_message = json.dumps(error_data, indent=2)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        error_message = f"Unable to parse error response. Raw content: {content[:500]}"
 
-        # Raise appropriate exception based on status code
-        status_code = response.status_code
-        if status_code == 400:
-            raise APIError(f"A validation error occurred.\nResponse: {error_message}")
-        elif status_code == 401:
-            raise AuthError(f"Access token is incorrect.\nResponse: {error_message}")
-        elif status_code == 402:
-            raise AuthError(
-                f"An active subscription is required.\nResponse: {error_message}"
-            )
-        elif status_code == 409:
-            raise NovelAIError(f"A conflict error occurred.\nResponse: {error_message}")
-        elif status_code == 429:
-            raise ConcurrentError(f"Rate limit exceeded.\nResponse: {error_message}")
-        else:
-            raise NovelAIError(
-                f"Unknown error (Status: {status_code}).\nResponse: {error_message}"
-            )
+    if status_code == 400:
+        raise APIError(f"A validation error occurred.\nResponse: {error_message}")
+    elif status_code == 401:
+        raise AuthError(f"Access token is incorrect.\nResponse: {error_message}")
+    elif status_code == 402:
+        raise AuthError(
+            f"An active subscription is required.\nResponse: {error_message}"
+        )
+    elif status_code == 409:
+        raise NovelAIError(f"A conflict error occurred.\nResponse: {error_message}")
+    elif status_code == 429:
+        raise ConcurrentError(f"Rate limit exceeded.\nResponse: {error_message}")
+    else:
+        raise NovelAIError(
+            f"Unknown error (Status: {status_code}).\nResponse: {error_message}"
+        )
 
 
-def handle_zip_content(zip_data: bytes) -> dict[str, bytes]:
+def handle_zip_content(zip_data: bytes) -> list[Image]:
     """
-    Handle binary data of a zip file and return a dictionary of file names and their contents.
+    Handle binary data of a zip file and return the contained images.
 
     Parameters
     ----------
@@ -346,8 +341,8 @@ def handle_zip_content(zip_data: bytes) -> dict[str, bytes]:
 
     Returns
     -------
-    `dict`
-        A dictionary where keys are file names and values are binary data of the files
+    `list[Image]`
+        Image objects for each file in the zip
     """
 
     return [

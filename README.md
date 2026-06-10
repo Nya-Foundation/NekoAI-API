@@ -403,28 +403,71 @@ result = await client.declutter(image='image.png')
 result = await client.colorize(image='image.png')
 ```
 
+### Upscale
+
+Upscale an image by 2x or 4x:
+
+```python
+result = await client.upscale('image.png', scale=4)
+result.save("output")
+```
+
+### Tag Suggestions
+
+Get tag completions for a partial tag:
+
+```python
+tags = await client.suggest_tags("blue hai")
+for tag in tags:
+    print(tag["tag"], tag["count"])
+```
+
+### ControlNet Annotation
+
+Generate a ControlNet condition mask from an image, then use it for generation:
+
+```python
+import base64
+from nekoai.constant import Controlnet
+
+mask = await client.annotate_image('image.png', model=Controlnet.SCRIBBLER)
+
+images = await client.generate_image(
+    prompt="1girl, cute",
+    controlnet_model=Controlnet.SCRIBBLER,
+    controlnet_condition=base64.b64encode(mask.data).decode(),
+)
+```
+
+### Account Information
+
+```python
+# Subscription tier and Anlas balance
+subscription = await client.get_subscription()
+
+# Full account data
+user_data = await client.get_user_data()
+```
+
 ### Custom Hosts
 
-You can specify custom API hosts for proxy support.
+Both the image host and the account API host can be pointed at a custom base URL
+(e.g. a reverse proxy or self-hosted gateway). The correct `Host` header is derived
+automatically from the URL you provide.
 
 ```python
 from nekoai import NovelAI
 
 async def main():
-    # You can also initialize with a custom host or proxy service
     custom_client = NovelAI(
         token="your_access_token",
-        host="https://your-custom-host.com"
+        host="https://your-custom-host.com",          # image endpoints (default: https://image.novelai.net)
+        api_host="https://your-custom-api-host.com",  # login/subscription endpoints (default: https://api.novelai.net)
     )
-    
-    # Generate with default host
-    images = await client.generate_image(
-        prompt="1girl, cute",
-    )
-    
-    
-    
-        await custom_client.close()
+
+    images = await custom_client.generate_image(prompt="1girl, cute")
+
+    await custom_client.close()
 
 asyncio.run(main())
 ```
