@@ -274,13 +274,13 @@ user_data = await client.get_user_data()
 ## Command Line Interface
 
 The `nekoai` command covers generation, tools, and account queries. Authentication
-comes from `--token`, the `NOVELAI_TOKEN` environment variable, or
+comes from `--token`, the `NAI_TOKEN` environment variable, or
 `--username`/`--password`.
 
 ```sh
 nekoai login <username> <password>          # exchange credentials for a token
 
-export NOVELAI_TOKEN="your_access_token"
+export NAI_TOKEN="your_access_token"
 nekoai generate "1girl, cute" -m v4_5 -s 832x1216 --steps 28 -n 2
 nekoai generate "1girl, cute" --stream      # live step progress (V4/V4.5)
 
