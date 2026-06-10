@@ -53,6 +53,6 @@ as the first argument and default to `examples/input/example_image.png`.
 | Script | What it shows | Cost |
 |---|---|---|
 | `upscale.py` | 2x/4x upscaling | Anlas |
-| `annotate_image.py` | ControlNet mask generation + guided V3 generation | Anlas* |
+| `annotate_image.py` | ControlNet condition masks (edge/depth preprocessing) | free |
 | `suggest_tags.py` | Tag autocomplete | free |
 | `account_info.py` | Subscription tier and Anlas balance | free |

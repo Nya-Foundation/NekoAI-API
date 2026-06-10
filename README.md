@@ -424,20 +424,17 @@ for tag in tags:
 
 ### ControlNet Annotation
 
-Generate a ControlNet condition mask from an image, then use it for generation:
+Generate a ControlNet condition mask (edge map, depth map, etc.) from an image:
 
 ```python
-import base64
 from nekoai.constant import Controlnet
 
 mask = await client.annotate_image('image.png', model=Controlnet.SCRIBBLER)
-
-images = await client.generate_image(
-    prompt="1girl, cute",
-    controlnet_model=Controlnet.SCRIBBLER,
-    controlnet_condition=base64.b64encode(mask.data).decode(),
-)
+mask.save("output")
 ```
+
+> **Note**: ControlNet-guided *generation* was a V1/V2-era feature and is not
+> supported by V3+ models; the annotators remain useful as preprocessing.
 
 ### Account Information
 

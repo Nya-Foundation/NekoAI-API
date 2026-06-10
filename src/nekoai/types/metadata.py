@@ -544,9 +544,14 @@ class Metadata(BaseModel):
 
         # Sampler handling
         # If sampler is k_euler_ancestral, set deliberate_euler_ancestral_bug and prefer_brownian
-        if self.sampler == Sampler.EULER_ANC and self.action == Action.GENERATE:
+        if self.sampler == Sampler.EULER_ANC and is_v4_model(self.model):
             self.deliberate_euler_ancestral_bug = False
             self.prefer_brownian = True
+
+        # V3/Furry payloads use sm/sm_dyn instead of the V4 fields
+        if not is_v4_model(self.model):
+            self.sm = self.sm or False
+            self.sm_dyn = self.sm_dyn or False
 
     def get_max_n_samples(self) -> int:
         """
@@ -675,6 +680,23 @@ class Metadata(BaseModel):
         """
         # Get standard parameters
         params = self.model_dump(mode="json", exclude_none=True)
+
+        # The web client always sends this key, as null when Variety Boost is off
+        params["skip_cfg_above_sigma"] = self.skip_cfg_above_sigma
+
+        # V3/Furry payloads carry sm/sm_dyn but none of the V4-specific fields
+        # (captured web payloads in examples/payloads/nai3.json)
+        if not is_v4_model(self.model):
+            for key in (
+                "autoSmea",
+                "use_coords",
+                "legacy_uc",
+                "normalize_reference_strength_multiple",
+                "deliberate_euler_ancestral_bug",
+                "prefer_brownian",
+                "inpaintImg2ImgStrength",
+            ):
+                params.pop(key, None)
 
         # Create the full request payload
         payload = {
