@@ -5,7 +5,7 @@ class DirectorTools(Enum):
     LINEART = "lineart"
     SKETCH = "sketch"
     BACKGROUND_REMOVAL = "bg-removal"
-    EMOTIOIN = "emotion"
+    EMOTION = "emotion"
     DECLUTTER = "declutter"
     COLORIZE = "colorize"
 

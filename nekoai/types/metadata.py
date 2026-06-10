@@ -165,7 +165,7 @@ class Metadata(BaseModel):
     res_preset: Resolution = Field(default=Resolution.NORMAL_SQUARE, exclude=True)
 
     # Prompt
-    negative_prompt: str = "" if action != Action.IMG2IMG else None
+    negative_prompt: str = ""
     qualityToggle: bool = True
     ucPreset: Literal[0, 1, 2, 3] = 0
 
@@ -180,10 +180,10 @@ class Metadata(BaseModel):
     dynamic_thresholding: bool = False
     seed: int = Field(
         default_factory=lambda: random.randint(0, 4294967295 - 7),
-        gt=0,
+        ge=0,
         le=4294967295 - 7,
     )
-    extra_noise_seed: Annotated[int, Field(gt=0, le=4294967295 - 7)] | None = None
+    extra_noise_seed: Annotated[int, Field(ge=0, le=4294967295 - 7)] | None = None
     sampler: Sampler = Sampler.EULER_ANC
 
     # legacy SMEA fields,
@@ -248,17 +248,9 @@ class Metadata(BaseModel):
             and isinstance(data["model"], str)
         ):
             try:
-                # Try to convert string to Model enum
                 data["model"] = Model(data["model"])
             except ValueError:
-                try:
-                    # Try to match by enum value
-                    for model_enum in Model:
-                        if model_enum.value == data["model"]:
-                            data["model"] = model_enum
-                            break
-                except:
-                    raise ValueError(f"Invalid model: {data['model']}")
+                raise ValueError(f"Invalid model: {data['model']}")
         return data
 
     @model_validator(mode="after")
@@ -315,13 +307,14 @@ class Metadata(BaseModel):
             self.width = (self.width + 63) // 64 * 64
             self.height = (self.height + 63) // 64 * 64
 
-        if not self.width * self.height in range(64 * 64, 3047424 + 1):
+        if self.width * self.height not in range(64 * 64, 3047424 + 1):
             raise ValueError(
                 f"The maximum allowed total resolution is (3047424 px), got {self.width}x{self.height}={self.width * self.height}."
             )
 
     def handle_stream(self):
-        if is_v4_model(self.model) and self.action == Action.GENERATE:
+        # All V4/V4.5 requests go through /ai/generate-image-stream and need msgpack framing
+        if is_v4_model(self.model):
             self.stream = "msgpack"
 
     def handle_inpaint_img2img_strength(self) -> None:
@@ -350,19 +343,13 @@ class Metadata(BaseModel):
         Handle the character prompts default values, if parameters are not set. and deduplicate the tags in the prompt and uc.
         """
 
-        if self.action != Action.GENERATE:
-            self.characterPrompts = None
-
         if not self.characterPrompts:
             return
 
-        # Set default values for character prompts
+        # Deduplicate tags in character prompts
         for cp in self.characterPrompts:
-            cp.enabled = cp.enabled or True
-            cp.prompt = self.deduplicate_tags(cp.prompt) if cp.prompt else "1girl, cute"
-            cp.uc = self.deduplicate_tags(cp.uc) if cp.uc else "lowres, aliasing,"
-            cp.center.x = cp.center.x or 0.5
-            cp.center.y = cp.center.y or 0.5
+            cp.prompt = self.deduplicate_tags(cp.prompt)
+            cp.uc = self.deduplicate_tags(cp.uc)
 
     def handle_v4_prompt(self):
         """
