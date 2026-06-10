@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Declutter an image (remove text/artifacts) with NovelAI's Director tool.
+"""Upscale an image 2x or 4x via the /ai/upscale endpoint (costs Anlas).
 
-Usage: uvrun examples/requests/declutter.py [path/to/image]
+Usage: uvrun examples/requests/upscale.py [path/to/image]
 Requires the NAI_TOKEN environment variable (e.g. via .env).
 """
 
@@ -16,9 +16,9 @@ IMAGE = sys.argv[1] if len(sys.argv) > 1 else "examples/input/example_image.png"
 
 async def main():
     async with NovelAI(token=os.environ["NAI_TOKEN"]) as client:
-        result = await client.declutter(IMAGE)
-        result.save("output", "declutter.png")
-        print("Saved output/declutter.png")
+        result = await client.upscale(IMAGE, scale=2)
+        result.save("output", "upscaled.png")
+        print("Saved output/upscaled.png")
 
 
 if __name__ == "__main__":

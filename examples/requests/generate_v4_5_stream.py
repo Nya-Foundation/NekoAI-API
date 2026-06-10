@@ -1,51 +1,32 @@
 #!/usr/bin/env python3
+"""Stream a V4.5 generation in real time, watching each denoising step.
+
+Usage: uvrun examples/requests/generate_v4_5_stream.py
+Requires the NAI_TOKEN environment variable (e.g. via .env).
 """
-Example script for generating an image with NovelAI API using the V4.5 curated model.
-Authentication is done with a direct access token.
-"""
+
 import asyncio
 import os
 
-from nekoai import NovelAI
-from nekoai.constant import Model, Resolution, Sampler
-from nekoai.types import EventType, MsgpackEvent
+from nekoai import EventType, Model, NovelAI, Resolution
 
 
 async def main():
-    # Use your NAI token (replace with your actual token)
-    token = os.environ.get("NAI_TOKEN")
-
-    # Initialize client with token authentication
-    client = NovelAI(token=token, verbose=True)
-
-    try:
+    async with NovelAI(token=os.environ["NAI_TOKEN"]) as client:
         async for event in await client.generate_image(
-            prompt="1girl, cute",
-            negative_prompt="1234",
-            ucPreset=3,
-            scale=5,
-            seed="3417044607",
-            steps=30,
-            n_samples=1,
+            prompt="1girl, silver hair, blue eyes, white dress, flower garden",
             model=Model.V4_5,
-            height=936,
-            width=1400,
-            sampler=Sampler.EULER_ANC,
+            res_preset=Resolution.NORMAL_PORTRAIT,
+            seed=424242,
             stream=True,
         ):
-            event: MsgpackEvent
-            os.makedirs("../output", exist_ok=True)
-
-            if event.event_type == EventType.INTERMEDIATE:
-                event.image.save(
-                    "../output", f"image_{event.samp_ix}_step_{event.step_ix:02d}.jpg"
-                )
-            elif event.event_type == EventType.FINAL:
-                event.image.save("../output", f"image_{event.samp_ix}_result.png")
-
-    finally:
-        # Close the client
-        await client.close()
+            if event.event_type == EventType.FINAL:
+                event.image.save("output", "stream_final.png")
+                print("Saved output/stream_final.png")
+            else:
+                print(f"step {event.step_ix} (sigma={event.sigma:.2f})", end="\r")
+                # Uncomment to keep every intermediate step:
+                # event.image.save("output", f"stream_step_{event.step_ix:02d}.jpg")
 
 
 if __name__ == "__main__":

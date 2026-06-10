@@ -1,38 +1,26 @@
 #!/usr/bin/env python3
-"""
-Example script for using the colorize director tool with NovelAI API.
-Authentication is done with a direct access token.
+"""Colorize a line art or sketch with NovelAI's Director tool.
+
+Usage: uvrun examples/requests/colorize.py [path/to/image]
+Requires the NAI_TOKEN environment variable (e.g. via .env).
 """
 
 import asyncio
-import base64
 import os
+import sys
 
 from nekoai import NovelAI
 
+IMAGE = sys.argv[1] if len(sys.argv) > 1 else "examples/input/lineart.png"
+
 
 async def main():
-    # Use your NAI token (replace with your actual token)
-    token = os.environ.get("NAI_TOKEN")
-
-    # Initialize client with token authentication
-    client = NovelAI(token=token)
-
-    try:
-        # Load a line art image file and encode it as base64
-        image_path = "../input/lineart.png"  # Replace with your line art image path
-
-        # Colorize the line art
-        result = await client.colorize(image=image_path)
-
-        # Save the result
-        os.makedirs("../output", exist_ok=True)
-        result.save("../output", "colorized_result.png")
-        print("Colorized image saved as ../output/colorized_result.png")
-
-    finally:
-        # Close the client
-        await client.close()
+    async with NovelAI(token=os.environ["NAI_TOKEN"]) as client:
+        result = await client.colorize(
+            IMAGE, prompt="silver hair, blue eyes, white dress"
+        )
+        result.save("output", "colorize.png")
+        print("Saved output/colorize.png")
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ from .exceptions import (
     AuthError,
     ConcurrentError,
     ImageProcessingError,
+    NotEnoughCreditsError,
     NovelAIError,
 )
 from .types import EventType, Image, MsgpackEvent
@@ -45,8 +46,8 @@ def handle_response_with_content(response, content: bytes) -> None:
     elif status_code == 401:
         raise AuthError(f"Access token is incorrect.\nResponse: {error_message}")
     elif status_code == 402:
-        raise AuthError(
-            f"An active subscription is required.\nResponse: {error_message}"
+        raise NotEnoughCreditsError(
+            f"Not enough Anlas or no active subscription.\nResponse: {error_message}"
         )
     elif status_code == 409:
         raise NovelAIError(f"A conflict error occurred.\nResponse: {error_message}")

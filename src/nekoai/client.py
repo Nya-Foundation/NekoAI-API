@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import io
 import zipfile
 from asyncio import Task
@@ -199,7 +200,10 @@ class NovelAI:
     def _api_headers(self) -> dict[str, str]:
         """Build per-request headers targeting the account API host."""
         headers = prep_headers(self.client.headers)
-        headers["Host"] = urlparse(self.api_host).netloc
+        # httpx lowercases header names, so replace in place to avoid
+        # sending a duplicate Host header
+        headers.pop("Host", None)
+        headers["host"] = urlparse(self.api_host).netloc
         return headers
 
     @validate_call
@@ -265,6 +269,10 @@ class NovelAI:
                     return self._stream_v4_events(payload, headers)
                 else:
                     content = await self._handle_v4_request(payload, headers)
+                    # Some V4 actions (e.g. img2img) answer with a zip even on
+                    # the stream endpoint; detect the format instead of assuming
+                    if content.startswith(b"PK"):
+                        return handle_zip_content(content)
                     return handle_msgpack_content(content)
             else:
                 content = await self._handle_v3_request(payload, headers)
@@ -480,8 +488,9 @@ class NovelAI:
                 # Raise an exception if the response is not valid
                 handle_response_with_content(response, response.content)
 
-                # Get and cache the vibe token
-                vibe_token = response.content
+                # The endpoint returns the vibe token as raw bytes; the
+                # generate payload expects it base64-encoded
+                vibe_token = base64.b64encode(response.content).decode("utf-8")
                 self.vibe_cache[cache_key] = vibe_token
 
             # Add both the original image and its vibe token
@@ -733,9 +742,10 @@ class NovelAI:
         }
 
         try:
+            # Upscale is served by the account API host, not the image host
             response = await self.client.post(
-                url=f"{self.host}{Endpoint.UPSCALE.value}",
-                headers=prep_headers(self.client.headers),
+                url=f"{self.api_host}{Endpoint.UPSCALE.value}",
+                headers=self._api_headers(),
                 json=payload,
             )
         except ReadTimeout as e:
@@ -787,9 +797,10 @@ class NovelAI:
         }
 
         try:
+            # Annotate is served by the account API host, not the image host
             response = await self.client.post(
-                url=f"{self.host}{Endpoint.ANNOTATE.value}",
-                headers=prep_headers(self.client.headers),
+                url=f"{self.api_host}{Endpoint.ANNOTATE.value}",
+                headers=self._api_headers(),
                 json=payload,
             )
         except ReadTimeout as e:
