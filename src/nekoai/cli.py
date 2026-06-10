@@ -2,7 +2,7 @@
 
 Authentication is resolved in this order:
 1. --token flag
-2. NOVELAI_TOKEN environment variable
+2. NAI_TOKEN environment variable
 3. --username / --password flags
 """
 
@@ -18,7 +18,7 @@ from .constant import Controlnet, Model, Resolution, Sampler
 from .exceptions import NovelAIError
 from .types import EmotionLevel, EmotionOptions, EventType
 
-TOKEN_ENV = "NOVELAI_TOKEN"
+TOKEN_ENV = "NAI_TOKEN"
 
 
 def _resolve_enum(enum_cls, value: str):
