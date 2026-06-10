@@ -8,6 +8,7 @@ from collections.abc import Generator
 from datetime import datetime
 
 import msgpack
+from loguru import logger
 
 from .exceptions import (
     APIError,
@@ -149,19 +150,36 @@ def _create_msgpack_event(obj: dict) -> MsgpackEvent:
 
 
 def _parse_msgpack_message(message_data: bytes) -> MsgpackEvent | None:
-    """Parse a single msgpack message, returning None if it is not an event."""
+    """
+    Parse a single msgpack message, returning None if it is not an image event.
+
+    Raises `NovelAIError` if the server reports a generation error in-stream.
+    """
     try:
         unpacker = msgpack.Unpacker(raw=False)
         unpacker.feed(message_data)
         obj = next(unpacker)
-
-        if isinstance(obj, dict) and "event_type" in obj:
-            return _create_msgpack_event(obj)
-
     except Exception:
-        pass
+        return None
 
-    return None
+    if not isinstance(obj, dict) or "event_type" not in obj:
+        return None
+
+    event_type = obj["event_type"]
+    if event_type == "error":
+        raise NovelAIError(
+            f"Server reported an error during generation (code {obj.get('code')}): "
+            f"{obj.get('message')}"
+        )
+    if event_type == "retry":
+        logger.warning(f"Server retry during generation: {obj.get('message')}")
+        return None
+
+    try:
+        return _create_msgpack_event(obj)
+    except Exception:
+        logger.debug(f"Skipping unparsable msgpack event: {obj.get('event_type')}")
+        return None
 
 
 def _parse_msgpack_events(msgpack_data: bytes) -> Generator[MsgpackEvent, None, None]:
@@ -195,6 +213,8 @@ def _parse_msgpack_events(msgpack_data: bytes) -> Generator[MsgpackEvent, None, 
             # Move to next message
             offset = msg_start + message_length
 
+        except NovelAIError:
+            raise
         except Exception:
             # Skip corrupted data and try next byte
             offset += 1

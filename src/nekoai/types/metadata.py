@@ -313,7 +313,7 @@ class Metadata(BaseModel):
             )
 
     def handle_stream(self):
-        # All V4/V4.5 requests go through /ai/generate-image-stream and need msgpack framing
+        # All V4/V4.5 actions go through /ai/generate-image-stream with msgpack framing
         if is_v4_model(self.model):
             self.stream = "msgpack"
 
@@ -362,7 +362,7 @@ class Metadata(BaseModel):
             return
 
         # skip if model is not V4/V4.5
-        if not is_v4_model(self.model) or self.action == Action.IMG2IMG:
+        if not is_v4_model(self.model):
             return
 
         char_captions: list[CharacterCaption] = []
@@ -392,7 +392,7 @@ class Metadata(BaseModel):
             return
 
         # skip if model is not V4/V4.5
-        if not is_v4_model(self.model) or self.action == Action.IMG2IMG:
+        if not is_v4_model(self.model):
             return
 
         char_captions: list[CharacterCaption] = []
