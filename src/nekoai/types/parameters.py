@@ -1,5 +1,3 @@
-from typing import List
-
 from pydantic import BaseModel, Field
 
 
@@ -32,7 +30,7 @@ class CharacterCaption(BaseModel):
     """
 
     char_caption: str
-    centers: List[PositionCoords] = Field(default_factory=lambda: [PositionCoords()])
+    centers: list[PositionCoords] = Field(default_factory=lambda: [PositionCoords()])
 
 
 class CharacterPrompt(BaseModel):
@@ -107,4 +105,4 @@ class V4CaptionFormat(BaseModel):
     """
 
     base_caption: str
-    char_captions: List[CharacterCaption] = Field(default_factory=list)
+    char_captions: list[CharacterCaption] = Field(default_factory=list)

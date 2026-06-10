@@ -2,8 +2,9 @@ import asyncio
 import io
 import zipfile
 from asyncio import Task
+from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import TYPE_CHECKING, AsyncGenerator, Optional
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from httpx import AsyncClient, ReadTimeout
@@ -22,17 +23,15 @@ from .types import (
 if TYPE_CHECKING:
     from .types.director import DirectorRequest
 
+from .auth import encode_access_key, prep_headers
 from .constant import HEADERS, Controlnet, Endpoint, Host, Model, is_v4_model
 from .exceptions import TimeoutError
-from .utils import (
+from .imaging import get_image_hash, parse_image
+from .response import (
     StreamingMsgpackParser,
-    encode_access_key,
-    get_image_hash,
     handle_msgpack_content,
     handle_response_with_content,
     handle_zip_content,
-    parse_image,
-    prep_headers,
 )
 
 
@@ -271,10 +270,10 @@ class NovelAI:
                 content = await self._handle_v3_request(payload, headers)
                 return handle_zip_content(content)
 
-        except ReadTimeout:
+        except ReadTimeout as e:
             raise TimeoutError(
                 "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
-            )
+            ) from e
 
     async def _handle_v3_request(self, payload: dict, headers: dict) -> bytes:
         """
@@ -406,10 +405,10 @@ class NovelAI:
                 headers=prep_headers(self.client.headers),
                 json=payload,
             )
-        except ReadTimeout:
+        except ReadTimeout as e:
             raise TimeoutError(
                 "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
-            )
+            ) from e
 
         handle_response_with_content(response, response.content)
 
@@ -618,7 +617,7 @@ class NovelAI:
         return await self.use_director_tool(request)
 
     async def colorize(
-        self, image, prompt: Optional[str] = "", defry: Optional[int] = 0
+        self, image, prompt: str | None = "", defry: int | None = 0
     ) -> "Image":
         """
         Colorize a line art or sketch using the Director tool.
@@ -654,7 +653,7 @@ class NovelAI:
         self,
         image,
         emotion: "EmotionOptions",
-        prompt: Optional[str] = "",
+        prompt: str | None = "",
         emotion_level: "EmotionLevel" = EmotionLevel.NORMAL,
     ) -> "Image":
         """
@@ -739,10 +738,10 @@ class NovelAI:
                 headers=prep_headers(self.client.headers),
                 json=payload,
             )
-        except ReadTimeout:
+        except ReadTimeout as e:
             raise TimeoutError(
                 "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
-            )
+            ) from e
 
         handle_response_with_content(response, response.content)
 
@@ -793,10 +792,10 @@ class NovelAI:
                 headers=prep_headers(self.client.headers),
                 json=payload,
             )
-        except ReadTimeout:
+        except ReadTimeout as e:
             raise TimeoutError(
                 "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
-            )
+            ) from e
 
         handle_response_with_content(response, response.content)
 

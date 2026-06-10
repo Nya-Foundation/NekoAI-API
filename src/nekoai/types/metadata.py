@@ -1,6 +1,6 @@
 import math
 import random
-from typing import Annotated, Any, Dict, List, Literal, Optional
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -208,20 +208,20 @@ class Metadata(BaseModel):
     # Vibe Transfer V3 legacy
     reference_image_multiple: list[str] = None
     reference_information_extracted_multiple: list[
-        Annotated[float, Field(default=1, ge=0.01, le=1, multiple_of=0.01)]
+        Annotated[float, Field(ge=0.01, le=1, multiple_of=0.01)]
     ] = None
     reference_strength_multiple: list[
-        Annotated[float, Field(default=0.6, ge=0.01, le=1, multiple_of=0.01)]
+        Annotated[float, Field(ge=0.01, le=1, multiple_of=0.01)]
     ] = None
 
     # V4/V4.5 specific fields
     params_version: Literal[1, 2, 3] = 3
     autoSmea: bool = Field(default=False)
-    characterPrompts: List[CharacterPrompt] = []
+    characterPrompts: list[CharacterPrompt] = []
 
-    v4_prompt: Optional[V4PromptFormat] = None
-    v4_negative_prompt: Optional[V4NegativePromptFormat] = None
-    skip_cfg_above_sigma: Optional[int] = None
+    v4_prompt: V4PromptFormat | None = None
+    v4_negative_prompt: V4NegativePromptFormat | None = None
+    skip_cfg_above_sigma: int | None = None
     use_coords: bool = Field(default=False)
     legacy_uc: bool = Field(default=False)
     normalize_reference_strength_multiple: bool = Field(default=True)
@@ -250,7 +250,7 @@ class Metadata(BaseModel):
             try:
                 data["model"] = Model(data["model"])
             except ValueError:
-                raise ValueError(f"Invalid model: {data['model']}")
+                raise ValueError(f"Invalid model: {data['model']}") from None
         return data
 
     @model_validator(mode="after")
@@ -365,7 +365,7 @@ class Metadata(BaseModel):
         if not is_v4_model(self.model) or self.action == Action.IMG2IMG:
             return
 
-        char_captions: List[CharacterCaption] = []
+        char_captions: list[CharacterCaption] = []
         for cp in self.characterPrompts:
             if cp.enabled:
                 char_captions.append(
@@ -395,7 +395,7 @@ class Metadata(BaseModel):
         if not is_v4_model(self.model) or self.action == Action.IMG2IMG:
             return
 
-        char_captions: List[CharacterCaption] = []
+        char_captions: list[CharacterCaption] = []
         for cp in self.characterPrompts:
             if cp.enabled and cp.uc:
                 char_captions.append(
@@ -664,7 +664,7 @@ class Metadata(BaseModel):
         # Reassemble the prompt with the same delimiter pattern (comma + space)
         return ", ".join(deduplicated_tags)
 
-    def model_dump_for_api(self) -> Dict[str, Any]:
+    def model_dump_for_api(self) -> dict[str, Any]:
         """
         Generate a request payload suitable for the NovelAI API.
 

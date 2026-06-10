@@ -472,13 +472,33 @@ async def main():
 asyncio.run(main())
 ```
 
-### CLI Token Generation
+## 🖥️ Command Line Interface
 
-You can generate an access token from the command line:
+The package ships a `nekoai` CLI covering the main features. Authentication comes
+from `--token`, the `NOVELAI_TOKEN` environment variable, or `--username`/`--password`.
 
 ```sh
-# Replace with your actual account credentials
+# Get an access token from your credentials
 nekoai login <username> <password>
+
+# Generate images (saved to ./output by default)
+export NOVELAI_TOKEN="your_access_token"
+nekoai generate "1girl, cute" -m v4_5 -s 832x1216 --steps 28 -n 2
+nekoai generate "1girl, cute" --stream            # live step progress (V4/V4.5)
+
+# Director and annotation tools
+nekoai tool lineart image.png
+nekoai tool bg-removal image.png
+nekoai tool emotion image.png --emotion happy
+nekoai tool annotate image.png --controlnet scribbler
+
+# Upscale, tag suggestions, account info
+nekoai upscale image.png --scale 4
+nekoai tags "blue hai"
+nekoai subscription
+
+# Works against a custom base URL too
+nekoai generate "1girl" --host https://your-custom-host.com
 ```
 
 ## Example Scripts
