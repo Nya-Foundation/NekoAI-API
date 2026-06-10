@@ -89,7 +89,8 @@ Authentication accepts a direct **access token** (recommended — generate one w
 `nekoai login <username> <password>`) or a **username/password** pair. The client
 initializes itself on first use; call `client.init(...)` only if you need a custom
 timeout or auto-close behavior. Pass `verbose=True` to log the estimated Anlas cost
-of each generation.
+of each generation. The package logs through Python's standard `logging` module
+under the `nekoai` logger.
 
 ## Image Generation
 
@@ -166,8 +167,7 @@ once generation completes. V3 models always return final images directly.
 ### Image to Image
 
 ```python
-from nekoai import Action, Model
-from nekoai.utils import parse_image
+from nekoai import Action, Model, parse_image
 
 width, height, base64_image = parse_image("input/source.png")
 
@@ -189,8 +189,7 @@ Provide a base image and a black/white mask (white areas are repainted) and use 
 inpainting model:
 
 ```python
-from nekoai import Action, Model
-from nekoai.utils import parse_image
+from nekoai import Action, Model, parse_image
 
 width, height, base64_image = parse_image("input/portrait.png")
 _, _, base64_mask = parse_image("input/mask.png")
@@ -214,8 +213,7 @@ encodes references through `/ai/encode-vibe` automatically (2 Anlas per new imag
 results are cached for the client's lifetime):
 
 ```python
-from nekoai import Model, Resolution
-from nekoai.utils import parse_image
+from nekoai import Model, Resolution, parse_image
 
 _, _, reference = parse_image("input/style_reference.png")
 
