@@ -6,6 +6,7 @@ from .director import (
     DirectorRequest,
     EmotionRequest,
     LineArtRequest,
+    SketchRequest,
 )
 from .image import EventType, Image, MsgpackEvent
 from .metadata import Metadata
@@ -14,6 +15,7 @@ from .parameters import (
     CharacterPrompt,
     PositionCoords,
     V4CaptionFormat,
+    V4NegativePromptFormat,
     V4PromptFormat,
 )
 from .user import User
@@ -26,16 +28,17 @@ __all__ = [
     "Metadata",
     "DirectorRequest",
     "LineArtRequest",
+    "SketchRequest",
     "BackgroundRemovalRequest",
     "DeclutterRequest",
     "ColorizeRequest",
     "EmotionRequest",
     "CharacterPrompt",
     "V4PromptFormat",
+    "V4NegativePromptFormat",
     "V4CaptionFormat",
     "CharacterCaption",
     "PositionCoords",
-    "HostInstance",
     "DirectorTools",
     "EmotionOptions",
     "EmotionLevel",

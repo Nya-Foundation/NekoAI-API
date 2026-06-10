@@ -29,10 +29,15 @@ class Host(Enum):
 
 class Endpoint(Enum):
     LOGIN = "/user/login"
+    USER_DATA = "/user/data"
+    SUBSCRIPTION = "/user/subscription"
     IMAGE = "/ai/generate-image"
     IMAGE_STREAM = "/ai/generate-image-stream"
     DIRECTOR = "/ai/augment-image"
     ENCODE_VIBE = "/ai/encode-vibe"
+    UPSCALE = "/ai/upscale"
+    ANNOTATE = "/ai/annotate-image"
+    SUGGEST_TAGS = "/ai/generate-image/suggest-tags"
 
 
 class Model(Enum):

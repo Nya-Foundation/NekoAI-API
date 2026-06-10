@@ -1,44 +1,58 @@
-# NovelAI API Request Examples
+# NekoAI-API Examples
 
-This directory contains example Python scripts demonstrating how to use the NekoAI API to interact with NovelAI's services. Each script is a standalone example that can be run independently.
+One standalone script per core functionality. Every example reads your access
+token from the `NAI_TOKEN` environment variable — the easiest way to run them
+is with a `.env` file at the repo root:
 
-## Authentication
-
-All examples use token-based authentication. Replace `"your_token_here"` with your actual NovelAI access token.
-
-For enhanced security in production environments, consider using environment variables or a secure secret management solution.
-
-## Image Generation Examples
-
-### Model Variations
-- **generate_v3.py**: Generate an image using V3 model
-- **generate_v4.py**: Generate an image using V4 curated model
-- **generate_v4_5.py**: Generate an image using V4.5 curated model
-- **generate_v4_5_multi_char.py**: Generate an image with multiple characters using V4.5 curated model
-
-## Director Tool Examples
-
-### Image Manipulation
-- **line_art.py**: Convert an image to line art
-- **background_removal.py**: Remove background from an image
-- **colorize.py**: Colorize a line art image
-- **declutter.py**: Clean up and declutter an image
-- **change_emotion.py**: Change a character's emotion in an image
-
-## How to Run
-
-1. Ensure you have installed the NekoAI package
-2. Replace the token and image paths in the examples with your own
-3. Run with Python 3:
-
-```bash
-python generate_v3.py
+```sh
+# .env
+NAI_TOKEN=your_access_token
 ```
 
-## Image Requirements
+```sh
+uv run examples/requests/generate_v4_5.py
+# or, if you load .env via a helper (e.g. `uvrun` = load-env .env uv run):
+uvrun examples/requests/generate_v4_5.py
+```
 
-For director tool examples, you'll need to provide input images. Place your images in the `examples/input/` directory or update the image paths in the scripts.
+Outputs are saved to `output/`. Scripts that take an input image accept a path
+as the first argument and default to `examples/input/example_image.png`.
 
-## Output
+> [!NOTE]
+> Each run is a real API call. NovelAI allows one concurrent generation per
+> account — run examples one at a time and avoid rapid-fire requests.
 
-All examples save their output to the `output/` directory, which will be created if it doesn't exist.
+## Image Generation
+
+| Script | What it shows | Cost |
+|---|---|---|
+| `generate_v3.py` | V3 model (zip response path) | Anlas* |
+| `generate_v4.py` | V4 full model | Anlas* |
+| `generate_v4_5.py` | V4.5 full model | Anlas* |
+| `generate_v4_5_stream.py` | Real-time step-by-step streaming | Anlas* |
+| `generate_v4_5_multi_char.py` | Multiple positioned characters | Anlas* |
+| `img2img.py` | Image-to-image with strength/noise | Anlas* |
+| `inpaint.py` | Masked inpainting (`inpaint.py <image> <mask>`) | Anlas* |
+| `vibe_transfer.py` | Style transfer from a reference image | Anlas* + 2 per vibe encode |
+
+\* Standard generations (≤1024×1024, ≤28 steps, 1 sample) are free on Opus.
+
+## Director Tools
+
+| Script | What it shows | Cost |
+|---|---|---|
+| `lineart.py` | Image → line art | free |
+| `sketch.py` | Image → sketch | free |
+| `background_removal.py` | Background removal | Anlas |
+| `declutter.py` | Remove text/artifacts | free |
+| `colorize.py` | Colorize line art (defaults to `examples/input/lineart.png`) | free |
+| `change_emotion.py` | Change a character's emotion | free |
+
+## Other Endpoints
+
+| Script | What it shows | Cost |
+|---|---|---|
+| `upscale.py` | 2x/4x upscaling | Anlas |
+| `annotate_image.py` | ControlNet condition masks (edge/depth preprocessing) | free |
+| `suggest_tags.py` | Tag autocomplete | free |
+| `account_info.py` | Subscription tier and Anlas balance | free |

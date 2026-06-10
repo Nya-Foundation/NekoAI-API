@@ -2,9 +2,9 @@
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/Nya-Foundation/NekoAI-API/main/assets/banner.png" alt="NekoAI-API Banner" width="800" />
-  
-  <h3>🎨 A lightweight async Python API for NovelAI image generation and director tools.</h3>
-  
+
+  <h3>A lightweight async Python client for NovelAI image generation, with first-class support for the V4.5 models.</h3>
+
   <div>
     <a href="https://github.com/Nya-Foundation/NekoAI-API/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Nya-Foundation/nekoai-api.svg" alt="License"/></a>
     <a href="https://pypi.org/project/nekoai-api/"><img src="https://img.shields.io/pypi/v/nekoai-api.svg" alt="PyPI version"/></a>
@@ -19,441 +19,301 @@
   </div>
 </div>
 
-## 🌈 Introduction
+## Overview
 
-> 🐾 **NekoAI-API** is a **lightweight** and **easy-to-use** Python wrapper for NovelAI's image generation capabilities. This project makes it simple to integrate NovelAI's powerful image generation and manipulation tools into your Python applications with minimal code overhead.
->
-> Built with asyncio for efficient performance, it provides full access to NovelAI's latest models (V3, V4, V4.5) and Director tools while maintaining a clean, pythonic interface. This project was heavily inspired by [HanaokaYuzu's NovelAI-API](https://github.com/HanaokaYuzu/NovelAI-API), with a focus on providing more features support and enhanced usability.
+**NekoAI-API** wraps NovelAI's image generation API in a clean, typed, asyncio-based
+Python interface. It centers on the **V4.5 model family** — multi-character prompts
+with positioning, real-time generation streaming, vibe transfer with automatic
+encoding — while remaining fully compatible with V4 and V3.
 
-### 📄 License Change Notice
+Request payloads are validated with pydantic and verified field-by-field against
+payloads captured from the NovelAI web client, so what this library sends is what
+the website sends.
 
-> **Important**: This project has transitioned from MIT to **AGPL-3.0** license to ensure better compliance and alignment with our inspiration source. As this work builds significantly upon concepts and approaches from HanaokaYuzu's NovelAI-API, we've adopted a more appropriate license that better reflects the collaborative nature of open-source development and provides stronger copyleft protections for the community.
+| | |
+|---|---|
+| ✨ **V4.5 first** | Full/Curated models, multi-character prompts with coordinates, character-level undesired content |
+| 🎬 **Real-time streaming** | Watch every denoising step as an async event stream |
+| 🖌️ **All actions** | Text-to-image, img2img, inpainting, vibe transfer (auto vibe encoding with caching) |
+| 🛠️ **Director tools** | Line art, sketch, background removal, declutter, colorize, emotion change |
+| 🔧 **Utilities** | Upscaling, tag suggestions, ControlNet annotation, subscription/Anlas info |
+| 🖥️ **CLI** | `nekoai` command covering generation, tools, and account queries |
+| 🌐 **Custom hosts** | Point image and account endpoints at your own reverse proxy or gateway |
 
-## 🌟 Core Capabilities
+> [!NOTE]
+> This project is licensed under **AGPL-3.0**. It was originally inspired by
+> [HanaokaYuzu/NovelAI-API](https://github.com/HanaokaYuzu/NovelAI-API) and adopts a
+> copyleft license accordingly.
 
-| Feature                      | Description                                                                                       |
-|------------------------------|---------------------------------------------------------------------------------------------------|
-| 🚀 **Lightweight**              | Focuses on image generation and Director tools, providing a simple and easy-to-use interface.     |
-| ⚙️ **Parameterized**            | Provides a `Metadata` class to easily set up generation parameters with type validation.           |
-| ⚡ **Asynchronous**             | Utilizes `asyncio` to run generating tasks and return outputs efficiently.                        |
-| 🎬 **Real-time Streaming**      | Stream V4/V4.5 generation progress in real-time, watching each denoising step as it happens.      |
-| 🔑 **Multiple Authentication Methods** | Supports both username/password and direct token authentication.                        |
-| 🌐 **Custom Hosts**             | Allows specifying custom API hosts for flexibility.                                               |
-| ✨ **Latest Models**            | Full support for V3, V4, and V4.5 models including multi-character generation.                    |
-| 🛠️ **Director Tools**           | Complete support for all NovelAI Director tools like line art, background removal, and emotion change. |
+## Supported Models
 
-## 📦 Installation
+| Model | Enum | Inpainting variant |
+|---|---|---|
+| **NAI Diffusion V4.5 Full** (recommended) | `Model.V4_5` | `Model.V4_5_INP` |
+| NAI Diffusion V4.5 Curated | `Model.V4_5_CUR` | `Model.V4_5_CUR_INP` |
+| NAI Diffusion V4 Full | `Model.V4` | `Model.V4_INP` |
+| NAI Diffusion V4 Curated | `Model.V4_CUR` | `Model.V4_CUR_INP` |
+| NAI Diffusion V3 | `Model.V3` | `Model.V3_INP` |
+| NAI Diffusion Furry V3 | `Model.FURRY` | `Model.FURRY_INP` |
 
-> [!IMPORTANT]
->
-> This package requires **Python 3.10 or higher**.
+## Installation
 
-Install/update with pip:
+Requires **Python 3.10+**.
 
 ```sh
 pip install -U nekoai-api
+# or
+uv add nekoai-api
 ```
 
-## 🚀 Usage
-
-### 🔑 Initialization
-
-Import required packages and initialize a client with your NovelAI credentials. You can use either **username/password** or a **direct token**.
+## Quick Start
 
 ```python
 import asyncio
-from nekoai import NovelAI
-
-# Option 1: Username and password
-async def main_with_credentials():
-    client = NovelAI(username="your_username", password="your_password")
-    # Client will auto-initialize when you make your first request
-    
-    images = await client.generate_image(prompt="1girl, cute")
-    
-# Option 2: Direct token authentication
-async def main_with_token():
-    client = NovelAI(token="your_access_token")
-    # Client will auto-initialize when you make your first request
-    
-    images = await client.generate_image(prompt="1girl, cute")
-    
-# Option 3: Manual initialization (if you need custom settings)
-async def main_with_manual_init():
-    client = NovelAI(token="your_access_token")
-    await client.init(timeout=60, auto_close=True)  # Custom timeout and auto-close
-    
-    images = await client.generate_image(prompt="1girl, cute")
-    # Client will auto-close after 5 minutes of inactivity
-
-asyncio.run(main_with_token())  # Or main_with_credentials()
-```
-
-> **Note**: The client now automatically initializes on first use, so calling `client.init()` is optional unless you need custom settings.
-
-### 🖼️ Image Generation
-
-After initializing successfully, you can generate images with the `generate_image` method. The method takes parameters **directly** or a `Metadata` object.
-
-By passing `verbose=True`, the method will print the **estimated Anlas cost** each time a generating request is going to be made.
-
-```python
-from nekoai import NovelAI, Metadata
-from nekoai.constant import Model, Resolution, Sampler, Noise
+from nekoai import Model, NovelAI, Resolution
 
 async def main():
-    client = NovelAI(token="your_access_token", verbose=True)
-    
-    # Generate using Metadata object
-    metadata = Metadata(
-        prompt="1girl, cute, anime style, detailed",
-        model=Model.V4_5_CUR,  # Use the latest V4.5 model
-        res_preset=Resolution.NORMAL_PORTRAIT,
-        n_samples=1,
-    )
-
-    # Alternative: pass parameters directly
-    images = await client.generate_image(
-        prompt="1girl, cute, anime style, detailed",
-        model=Model.V4_5_CUR,
-        res_preset=Resolution.NORMAL_PORTRAIT,
-        seed=1234567890  # Fixed seed for reproducibility
-    )
-
-    for image in images:
-        image.save(path="output")
-        print(f"Image saved: {image.filename}")
+    async with NovelAI(token="your_access_token") as client:
+        images = await client.generate_image(
+            prompt="1girl, silver hair, blue eyes, white dress, flower garden",
+            model=Model.V4_5,
+            res_preset=Resolution.NORMAL_PORTRAIT,
+        )
+        for image in images:
+            image.save("output")
 
 asyncio.run(main())
 ```
 
-### 🎬 Real-time Streaming (V4/V4.5 Models)
+Authentication accepts a direct **access token** (recommended — generate one with
+`nekoai login <username> <password>`) or a **username/password** pair. The client
+initializes itself on first use; call `client.init(...)` only if you need a custom
+timeout or auto-close behavior. Pass `verbose=True` to log the estimated Anlas cost
+of each generation.
 
-For V4 and V4.5 models, you can stream the generation process in real-time to see each denoising step as it happens. This is perfect for monitoring progress or creating timelapse videos of the generation process.
+## Image Generation
+
+`generate_image` accepts parameters directly or a prepared `Metadata` object.
+Quality tags and undesired-content presets are applied automatically per model
+(disable with `qualityToggle=False` / `ucPreset=3`).
 
 ```python
-import asyncio
-from nekoai import NovelAI
-from nekoai.constant import Model, Resolution
-from nekoai.types import EventType
+from nekoai import Metadata, Model, NovelAI, Resolution, Sampler
 
-async def main():
-    client = NovelAI(token="your_access_token", verbose=True)
-    
-    # Stream generation progress in real-time
-    async for event in client.generate_image(
-        prompt="1girl, cute, anime style, detailed",
-        model=Model.V4_5_CUR,
-        res_preset=Resolution.NORMAL_PORTRAIT,
-        stream=True  # Enable streaming mode
-    ):
-        if event.event_type == EventType.INTERMEDIATE:
-            print(f"📸 Step {event.step_ix}/28 - Sigma: {event.sigma:.2f}")
-            # Optionally save intermediate steps
-            event.image.save("output", f"step_{event.step_ix:02d}.jpg")
-            
-        elif event.event_type == EventType.FINAL:
-            print("🎉 Final image ready!")
-            event.image.save("output", "final_result.png")
-            break
-    
-    
-asyncio.run(main())
+metadata = Metadata(
+    prompt="1girl, cute, anime style, detailed",
+    negative_prompt="lowres, blurry",
+    model=Model.V4_5,
+    res_preset=Resolution.NORMAL_PORTRAIT,
+    sampler=Sampler.EULER_ANC,
+    steps=28,
+    scale=6.0,
+    seed=1234567890,
+)
+
+images = await client.generate_image(metadata)
 ```
 
-#### 🔄 Streaming vs Batch Mode
+### Multi-Character Prompts (V4/V4.5)
 
-The library supports two modes for V4/V4.5 models:
-
-| Mode | Description | Use Case |
-|------|-------------|----------|
-| **Streaming** (`stream=True`) | Returns an async generator yielding events in real-time | Progress monitoring, UI updates, timelapse creation |
-| **Batch** (`stream=False`) | Returns final images only after complete generation | Simple generation, batch processing |
+Each character gets its own prompt, undesired content, and canvas position:
 
 ```python
-# Streaming mode - see progress in real-time
-async for event in client.generate_image(..., stream=True):
-    # Process each denoising step as it happens
-    pass
+from nekoai import CharacterPrompt, Model, PositionCoords, Resolution
 
-# Batch mode - get final results only
-images = await client.generate_image(..., stream=False)
-for image in images:
-    image.save("output")
-```
-
-> **Note**: Streaming is only available for V4/V4.5 models. V3 models will return final images directly.
-
-### Multi-Character Generation (V4.5)
-
-V4.5 models support generating multiple characters with character-specific prompts and positioning.
-
-```python
-from nekoai import NovelAI
-from nekoai.constant import Model, Resolution
-from nekoai.types import CharacterPrompt, PositionCoords
-
-async def main():
-    client = NovelAI(token="your_access_token")
-    
-    # Create character prompts with positioning
-    character_prompts = [
+images = await client.generate_image(
+    prompt="two people standing together, park background",
+    model=Model.V4_5,
+    res_preset=Resolution.NORMAL_LANDSCAPE,
+    characterPrompts=[
         CharacterPrompt(
             prompt="girl, red hair, red dress",
             uc="bad hands, bad anatomy",
-            center=PositionCoords(x=0.3, y=0.3),
+            center=PositionCoords(x=0.3, y=0.5),
         ),
         CharacterPrompt(
-            prompt="boy, blue hair, blue uniform", 
+            prompt="boy, blue hair, blue uniform",
             uc="bad hands, bad anatomy",
-            center=PositionCoords(x=0.7, y=0.7),
-        )
-    ]
-    
-    # Generate image with multiple characters
-    images = await client.generate_image(
-        prompt="two people standing together, park background",
-        model=Model.V4_5,
-        res_preset=Resolution.NORMAL_LANDSCAPE,
-        characterPrompts=character_prompts,
-    )
-    
-    for image in images:
-        image.save("output")
-    
-    
-asyncio.run(main())
+            center=PositionCoords(x=0.7, y=0.5),
+        ),
+    ],
+)
 ```
+
+### Real-time Streaming (V4/V4.5)
+
+With `stream=True`, `generate_image` returns an async event stream so you can watch
+each denoising step — useful for progress UIs and timelapses:
+
+```python
+from nekoai import EventType
+
+async for event in await client.generate_image(
+    prompt="1girl, cute, anime style",
+    model=Model.V4_5,
+    res_preset=Resolution.NORMAL_PORTRAIT,
+    stream=True,
+):
+    if event.event_type == EventType.INTERMEDIATE:
+        print(f"step {event.step_ix} (sigma={event.sigma:.2f})")
+    elif event.event_type == EventType.FINAL:
+        event.image.save("output", "final.png")
+```
+
+In batch mode (`stream=False`, the default) the same call returns `list[Image]`
+once generation completes. V3 models always return final images directly.
 
 ### Image to Image
 
-To perform `img2img` action, set `action` parameter to `Action.IMG2IMG`, and provide a base64-encoded image.
-
 ```python
-from nekoai import NovelAI
-from nekoai.constant import Action
+from nekoai import Action, Model
 from nekoai.utils import parse_image
 
-async def main():
-    client = NovelAI(token="your_access_token")
-    
-    # Parse image automatically handles various input formats
-    width, height, base64_image = parse_image('image.png')
+width, height, base64_image = parse_image("input/source.png")
 
-    images = await client.generate_image(
-        prompt="1girl, fantasy outfit",
-        action=Action.IMG2IMG,
-        width=width,
-        height=height,
-        image=base64_image,
-        strength=0.5,  # Lower = more similar to original
-        noise=0.1,
-    )
-
-    for image in images:
-        image.save("output")
-    
-    
-asyncio.run(main())
+images = await client.generate_image(
+    prompt="1girl, fantasy outfit",
+    model=Model.V4_5,
+    action=Action.IMG2IMG,
+    width=width,
+    height=height,
+    image=base64_image,
+    strength=0.5,  # lower = closer to the original
+    noise=0.1,
+)
 ```
 
 ### Inpainting
 
-To perform inpainting, set `action` to `Action.INPAINT`, and provide both a base image and a mask.
+Provide a base image and a black/white mask (white areas are repainted) and use an
+inpainting model:
 
 ```python
-import base64
-from nekoai import NovelAI
-from nekoai.constant import Model, Action, Resolution
+from nekoai import Action, Model
+from nekoai.utils import parse_image
 
-async def main():
-    client = NovelAI(token="your_access_token")
-    
-    with open("input/portrait.jpg", "rb") as f:
-        base_image = base64.b64encode(f.read()).decode("utf-8")
+width, height, base64_image = parse_image("input/portrait.png")
+_, _, base64_mask = parse_image("input/mask.png")
 
-    with open("input/mask.jpg", "rb") as f:
-        mask = base64.b64encode(f.read()).decode("utf-8")
-
-    images = await client.generate_image(
-        prompt="1girl, detailed background",
-        model=Model.V3_INP,  # Use inpainting model
-        action=Action.INPAINT,
-        res_preset=Resolution.NORMAL_PORTRAIT,
-        image=base_image,
-        mask=mask,
-        add_original_image=True,  # Overlay original image
-    )
-
-    for image in images:
-        image.save("output")
-    
-    
-asyncio.run(main())
+images = await client.generate_image(
+    prompt="1girl, detailed background",
+    model=Model.V4_5_INP,
+    action=Action.INPAINT,
+    width=width,
+    height=height,
+    image=base64_image,
+    mask=base64_mask,
+    add_original_image=True,  # overlay untouched pixels from the original
+)
 ```
 
 ### Vibe Transfer
 
-Vibe transfer allows using a reference image's style or mood in your generated image (V4_CUR only).
+Borrow the style and mood of reference images. For V4/V4.5 models the client
+encodes references through `/ai/encode-vibe` automatically (2 Anlas per new image;
+results are cached for the client's lifetime):
 
 ```python
-import base64
-from nekoai import NovelAI
-from nekoai.constant import Model, Resolution
+from nekoai import Model, Resolution
+from nekoai.utils import parse_image
 
-async def main():
-    client = NovelAI(token="your_access_token")
-    
-    with open("input/style_reference.jpg", "rb") as f:
-        ref_image = base64.b64encode(f.read()).decode("utf-8")
+_, _, reference = parse_image("input/style_reference.png")
 
-    images = await client.generate_image(
-        prompt="landscape, mountains, sunset",
-        model=Model.V4_CUR,
-        res_preset=Resolution.NORMAL_LANDSCAPE,
-        reference_image_multiple=[ref_image],
-        reference_information_extracted_multiple=[1],  # Max information extracted
-        reference_strength_multiple=[0.7],  # Strong style transfer
-    )
-
-    for image in images:
-        image.save("output")
-    
-    
-asyncio.run(main())
+images = await client.generate_image(
+    prompt="landscape, mountains, sunset",
+    model=Model.V4_5,
+    res_preset=Resolution.NORMAL_LANDSCAPE,
+    reference_image_multiple=[reference],
+    reference_information_extracted_multiple=[1.0],
+    reference_strength_multiple=[0.7],
+)
 ```
 
-### Director Tools
+## Director Tools
 
-NovelAI offers several Director tools for image manipulation, all accessible through dedicated methods.
-
-#### Line Art
-
-Convert an image to line art:
+Every Director tool is a single method call. Image inputs accept a file path,
+`pathlib.Path`, raw `bytes`, a file-like object, or a base64 string.
 
 ```python
-import asyncio
-from nekoai import NovelAI
+from nekoai import EmotionLevel, EmotionOptions
 
-async def main():
-    client = NovelAI(token="your_access_token")
-    
-    result = await client.lineart('image.png')
-    result.save("output")
+result = await client.lineart("image.png")            # image -> line art
+result = await client.sketch("image.png")             # image -> sketch
+result = await client.background_removal("image.png") # remove background (costs Anlas)
+result = await client.declutter("image.png")          # remove text/artifacts
+result = await client.colorize("lineart.png", prompt="silver hair, blue eyes")
 
-    print(f"Line art saved as {result.filename}")
-    
-    
-asyncio.run(main())
+result = await client.change_emotion(
+    "image.png",
+    emotion=EmotionOptions.HAPPY,
+    emotion_level=EmotionLevel.NORMAL,
+)
+
+result.save("output")
 ```
 
-#### Background Removal
-
-Remove the background from an image:
+## Utilities
 
 ```python
-import asyncio
-from nekoai import NovelAI
+# Upscale 2x or 4x (costs Anlas)
+upscaled = await client.upscale("image.png", scale=4)
 
-async def main():
-    client = NovelAI(token="your_access_token")
-    
-    result = await client.background_removal('image.png')
-    result.save("output")
+# Tag autocomplete
+tags = await client.suggest_tags("blue hai")  # [{"tag": "blue hair", "count": ...}, ...]
 
-    print(f"Background has been removed and saved as {result.filename}")
-    
-    
-asyncio.run(main())
+# ControlNet condition masks (edge/depth preprocessing).
+# Note: ControlNet-guided generation is a V1/V2-era feature not supported by V3+.
+from nekoai import Controlnet
+mask = await client.annotate_image("image.png", model=Controlnet.SCRIBBLER)
+
+# Subscription tier and Anlas balance
+subscription = await client.get_subscription()
+user_data = await client.get_user_data()
 ```
 
-#### Change Emotion
+## Command Line Interface
 
-Change the emotion of a character in an image:
-
-```python
-import asyncio
-from nekoai import NovelAI
-from nekoai.types import EmotionOptions, EmotionLevel
-
-async def main():
-    client = NovelAI(token="your_access_token")
-    
-    result = await client.change_emotion(
-        image="image.png",
-        emotion=EmotionOptions.HAPPY,
-        emotion_level=EmotionLevel.NORMAL
-    )
-    
-    result.save("output")
-    
-    
-asyncio.run(main())
-```
-
-#### Other Director Tools
-
-Additional tools include:
-
-```python
-# Declutter an image, input can be str | pathlib.Path | bytes | io.BytesIO
-result = await client.declutter(image='image.png')
-
-# Colorize a sketch or line art
-result = await client.colorize(image='image.png')
-```
-
-### Custom Hosts
-
-You can specify custom API hosts for proxy support.
-
-```python
-from nekoai import NovelAI
-
-async def main():
-    # You can also initialize with a custom host or proxy service
-    custom_client = NovelAI(
-        token="your_access_token",
-        host="https://your-custom-host.com"
-    )
-    
-    # Generate with default host
-    images = await client.generate_image(
-        prompt="1girl, cute",
-    )
-    
-    
-    
-        await custom_client.close()
-
-asyncio.run(main())
-```
-
-### CLI Token Generation
-
-You can generate an access token from the command line:
+The `nekoai` command covers generation, tools, and account queries. Authentication
+comes from `--token`, the `NAI_TOKEN` environment variable, or
+`--username`/`--password`.
 
 ```sh
-# Replace with your actual account credentials
-nekoai login <username> <password>
+nekoai login <username> <password>          # exchange credentials for a token
+
+export NAI_TOKEN="your_access_token"
+nekoai generate "1girl, cute" -m v4_5 -s 832x1216 --steps 28 -n 2
+nekoai generate "1girl, cute" --stream      # live step progress (V4/V4.5)
+
+nekoai tool lineart image.png               # also: sketch, bg-removal, declutter,
+nekoai tool emotion image.png --emotion happy  # colorize, emotion, annotate
+nekoai upscale image.png --scale 4
+nekoai tags "blue hai"
+nekoai subscription
 ```
 
-## Example Scripts
+## Custom Hosts
 
-The package includes several example scripts in the `examples/requests/` directory:
+Both the image host and the account host can point at a custom base URL (reverse
+proxy, self-hosted gateway). The `Host` header is derived from the URL automatically.
 
-- Generation with different models (V3, V4, V4.5)
-- Multi-character generation
-- All director tools (line art, background removal, emotion change, etc.)
+```python
+client = NovelAI(
+    token="your_access_token",
+    host="https://your-image-proxy.example.com",   # default: https://image.novelai.net
+    api_host="https://your-api-proxy.example.com", # default: https://api.novelai.net
+)
+```
+
+## Examples
+
+One runnable script per feature lives in [`examples/requests/`](examples/requests/),
+each reading `NAI_TOKEN` from the environment — see its
+[README](examples/requests/README.md) for the full index and per-feature Anlas costs.
 
 ## References
 
-[NovelAI Documentation](https://docs.novelai.net/)
-
-[NovelAI Backend API](https://api.novelai.net/docs)
-
-[NovelAI Unofficial Knowledgebase](https://naidb.miraheze.org/wiki/Using_the_API)
-
-[Aedial's novelai-api](https://github.com/Aedial/novelai-api)
-
-[HanaokaYuzu's NovelAI-API](https://github.com/HanaokaYuzu/NovelAI-API)
+- [NovelAI Documentation](https://docs.novelai.net/)
+- [NovelAI Backend API](https://api.novelai.net/docs)
+- [NovelAI Unofficial Knowledgebase](https://naidb.miraheze.org/wiki/Using_the_API)
+- [Aedial/novelai-api](https://github.com/Aedial/novelai-api)
+- [HanaokaYuzu/NovelAI-API](https://github.com/HanaokaYuzu/NovelAI-API)

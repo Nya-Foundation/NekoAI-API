@@ -1,0 +1,52 @@
+{
+    "action": "infill",
+    "input": "1girl, cute, very aesthetic, masterpiece, no text",
+    "model": "nai-diffusion-4-5-full-inpainting",
+    "parameters": {
+        "add_original_image": false,
+        "autoSmea": false,
+        "cfg_rescale": 0,
+        "characterPrompts": [],
+        "controlnet_strength": 1,
+        "deliberate_euler_ancestral_bug": false,
+        "dynamic_thresholding": false,
+        "extra_noise_seed": 2543162755,
+        "height": 1216,
+        "image": "iVBORw0KGgoAAAANSUhEUgAAA0AAAATACAYAAADZdCcUAAAAAXNSR0IArs4c6QAAIABJREFUeF7kvfmTHNlxJvhFZkRkZp1AAYX7vq8G0AfvUzykISWZNDM2azu2tj+s2f66Zvv/7O4PK7O1kUwjarSkDlKimhLZJLvZVDf7QqOBbjRuoFCFOjIrr7jW3P29iBdXZmShukmbLVoTVZkR737u/j13/57V6WxEQViDFQER6Ef+X37k91qtBiv+K0IURbAswOJPLf4dURS*****",
+        "n_samples": 1,
+        "negative_prompt": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+        "noise": 0,
+        "noise_schedule": "karras",
+        "normalize_reference_strength_multiple": true,
+        "params_version": 3,
+        "prefer_brownian": true,
+        "qualityToggle": true,
+        "sampler": "k_euler_ancestral",
+        "scale": 5,
+        "seed": 2543162756,
+        "skip_cfg_above_sigma": null,
+        "steps": 23,
+        "stream": "msgpack",
+        "strength": 0.7,
+        "ucPreset": 0,
+        "use_coords": false,
+        "v4_negative_prompt": {
+            "caption": {
+                "base_caption": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+                "char_captions": []
+            },
+            "legacy_uc": false
+        },
+        "v4_prompt": {
+            "caption": {
+                "base_caption": "1girl, cute, very aesthetic, masterpiece, no text",
+                "char_captions": []
+            },
+            "use_coords": false,
+            "use_order": true
+        },
+        "width": 832
+    },
+    "recaptcha_token": "03AFcWeA7WUnlUuzeRXX42qnggLof1Px6fUuO5FnT2QpIY7dqACNQcx0Im0WOAh0UnCs4JN2ObE_dbp-Bn0DmPZ_VPwKIOdUbJZ0zupzjPJzmo-n4HpOOEKB23nEkk_ZNCMBavo_3reFoJhu3xDjNQZbqhbH2LUwDIdCG2ibsEXt1VySTOKT8dUgxikqKrIN-rrUKD5WE2rSUvyhULf1YapjJsAsiGdab4nX_vgmanszrE_DZvKhB2_YBeh_8KuEsc8vqlw8rLVv94FMYn10VRX1ZC6vpCnK7pCuPw0qGqSra3-BAqUY6RVLCJj8IBiqpgeM3I9xxh6fnRnb8fZaz1cI8fhk6fo2LTFYP9y4fiWIEyldypXPWVn6EvPpc6hwNEZavdNVDJNSStVCzpHV0hHvRyyASw9jlyA6WG0dZH-SmnTQ8JNxTwvIhnIDCRBevkh3ChIGyzXy5eCSfKXoH1C__t9506NSlAtz31WlMUqp459ehHxCj23MOyIsJ6TgRRTT9-TzPjDJeqYn9ppSK0bO6gRyrbeJm_3Ml2kf1cjGvN6V7uGyZB6glrsIvL4rndH0utw9zTmk8MVaj4LWjM3C2kjxbvZlhYPPo2WeRvQ8BWufqMrCrWyhLcItI9-RgprjReGnoR1-TNR5JDFxnAOms7dpVSEDXanql14rnCsgjISlW8467__TQKzlJ6Lxkiwk3TT8cIa37C6PQE8dls98RS98xqZzl360WxROAaGB4T5b12EV6zJEwzFHDPZWV5v_bzw4wvqnooecvK3ie2fMwViV0-LWWM2JrfrXh2xd7m5OJ8uu6OYhgmTCCkfsqksnbhCbPPofuXoVcj_U-FrS65IfefmQTzbwL7bzgNsv1zM7dWgQhr6noQznXK7GBRjg9e6c1vknVLZSo_wkI_yEcBjHeYnGRJgkN_E_ZhsRccG3HXFUTw3VB0i62EX5MOdsCbK1gB2Y4ogeVVW8HZYR_2RN6n2tHLnj_JpCO3Vugvgj6VHG8SlFZDO_x_JCUrY40Qtjc2U7HNBieDE0q_XAB0G87l_ovWkp7rkU58d1kvmuGk070aEEMuY5z6BCZBeZUlQJxkrDmODeApMviMz7gygxl4kg-X3BtdI5cSvfPbsfTD9MRBvRqmy-y55Hr5G1BzIczOtzaBE_iOAtN6a1N__ilBMgGYQTEOrCoZof4g20XtFGhZ3g9CVdxJiT7hRnj6XxoR0pjU3gHJp6NWnVhVKupgt581nW3ZPdk2uo7UHW19rFTLAlQ3PiUe45DAYKAQRpz_MQI2ZAmb6fFriuiThlTF5a2GKcJmId7Nm8OtDW_XLeQbKoCeU5ANbtQcpPusWJ9S7Ke1pJp_Fbw6rkduUwBTopRQX8xhJsdyChq-z8AxChdSI_SMGiYDiOzgxlnPzFNsUz8T2zREkbTeBn_it8NdBwPfREg4gpc1OMlqSA3mP6Cstc17hyL7gx51nWYT9OBX6Z5vahmj46uvbsvGUryiDt8YPiJ69C2ZP30fb5o62bd1u078N4VI-F5qUHraGgKgFjzdD7J3jh2BN-VKrE6w1t9l9XaixPPI7FjfJ1qXaBpI039Y4xNfHLzMRlWfe2J67MExQ-6UjuGowfVOUkwqDwj8TuLJov9yEsdLTz6fRBpJotwHR9A3zPKClMI1eOBPQ3EcVBIcr4SkEx6EngptZkkzVDj-luvhe2uu2S8teK3vdoZQLS-ia-8FjNGzg8TelP9arkZg_moWEWPgt6rjyKSJOtuEQke_zMtRizYBHC7Pz912Hh0ND1A0x0rLltYzBSQSHeOLB0l_yS168Zkdx5gHqxQj83Nga79j8-veKiVwowqAPNQBdW_Io2oYeFnTmoxRSFIodr4pAqzHMecLkt8aNV_hYYmsQaw4lmiWiDKBpAanu9m5GYha1pV-sW4XODng2DoNDbeF0mGRh7sqCKgnFUiQ-ov0_ObugrKcZe6glb77JhCKIeT-ZvlZew0HrljAQLGl9MFZw2QwZ7XKae4qFR-vQYuqC3eMFQSCWfWyUE7mzbf4OqA6Bf5Q3hfST2JLsjjK59V4kQjvxVUVqzVqTFTG81P_cZfas9yMaz9LNhQdtxmpu9v3i8uIKrIEnR7nZX-m6RN8-8gc7cyK7EMY72PiS190MyKmLH8yveTKP5ncXW4YiUXHnOhRcEMyFqbS9Yh5FMt4xjliDG3PAbyn58LMHBAcnOYOrOT4ib_-WxZNTeYmOkxJVczw134Ql-UQQyDWnd3Sfo2b38XTtKsIIMnRLYGkWCqyCW07fg_T74SOuYklEAJfLoxh5Ybgbth-a2pWBswFn64CK5oQW62A-j22KoeaqVjTYgM6vtuZTK1zj7zMG3A4MWuRlI4lIGWKeh5xNu6Wm68EE98i7PSLDrFy0-DMGPox6IM2cHvr0i5wOOD8k9lBPZms05vpuDvNKY4yUJJWDpQmsDTym72W5_nXbuv4CGzLlKHjvI0IsUxBjuxakjkOV5ym7ogNow7YNTd-S6WCC8xcvZh0mVYn4QPs6CjbARF788511hWjrtFIjoS8ygkITuupYT223FhWLdbdnDp7tB5tI98XlG2BOAwCaQZw2h0giKRktEYQ5akwb7Ab9H6Px9yM2qLH5FDEZxzr3JPJQs7E2y-pbTsI0QlroFoIgmxf20FVOyiXzYyE8awd4ztc_olbKVPZ75VGG-7XdRZvGwU82nk5AJRXkPwt9oA6yGwryx_6PvVyaZIJGjUnZMEAePgFNjcDiF-YVApECrMT4r0a9xX8KjFxZCzpKLVUveZKIdoD23KaRUbItygZEABT1R-mMixO2p8Jid9mTwitKDhaAA5F5LUwycZkWbFECr2j_k71w_HFkzczl1QQ5bnhbCL45o1LxadlFkD-GdCXweo_aKBqvBA-yjzdUyvIRqMbUqufdyGptwOIaSbFU2dy2KEmoHnfUbkx_jjoaoHV7P_2odPPzRH0ZCWpZNJn4r3UD7cPN2N3Ig2pwTFjiAJ5Yd2Y0ipBX6qjOKkJ9rN72rJh6fbD56Ntrm1v7K48b5lI-4-WUNvXbiPoPv2B5evwpG6szc7n2tiF7SHrJ4fcxAV4osgsazEGaAnuyQRitOdFMMmFer4WD0tcb3N6WiP1rL09x1tKqeaSTlFRpdc1TPEti44PUWbSf16cXKM3_2epL3qvD-TV3Z7Qg66OHlrCmvOdlchyve5zpSfFPmMeAQWf7RroQ-Nv_-fl_wUdbfIJCPXJVEUusIIfbBpX_0WOS6CnXc8SWZJ_0EAlo6YJhjpSvnLanHwHOt4AlLSGStMV9ldTDMCgvKYvygxJEqxs0yCIZPRkRGz-",
+    "use_new_shared_trial": true
+}

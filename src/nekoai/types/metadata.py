@@ -1,6 +1,6 @@
 import math
 import random
-from typing import Annotated, Any, Dict, List, Literal, Optional
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -165,7 +165,7 @@ class Metadata(BaseModel):
     res_preset: Resolution = Field(default=Resolution.NORMAL_SQUARE, exclude=True)
 
     # Prompt
-    negative_prompt: str = "" if action != Action.IMG2IMG else None
+    negative_prompt: str = ""
     qualityToggle: bool = True
     ucPreset: Literal[0, 1, 2, 3] = 0
 
@@ -180,10 +180,10 @@ class Metadata(BaseModel):
     dynamic_thresholding: bool = False
     seed: int = Field(
         default_factory=lambda: random.randint(0, 4294967295 - 7),
-        gt=0,
+        ge=0,
         le=4294967295 - 7,
     )
-    extra_noise_seed: Annotated[int, Field(gt=0, le=4294967295 - 7)] | None = None
+    extra_noise_seed: Annotated[int, Field(ge=0, le=4294967295 - 7)] | None = None
     sampler: Sampler = Sampler.EULER_ANC
 
     # legacy SMEA fields,
@@ -208,20 +208,20 @@ class Metadata(BaseModel):
     # Vibe Transfer V3 legacy
     reference_image_multiple: list[str] = None
     reference_information_extracted_multiple: list[
-        Annotated[float, Field(default=1, ge=0.01, le=1, multiple_of=0.01)]
+        Annotated[float, Field(ge=0.01, le=1, multiple_of=0.01)]
     ] = None
     reference_strength_multiple: list[
-        Annotated[float, Field(default=0.6, ge=0.01, le=1, multiple_of=0.01)]
+        Annotated[float, Field(ge=0.01, le=1, multiple_of=0.01)]
     ] = None
 
     # V4/V4.5 specific fields
     params_version: Literal[1, 2, 3] = 3
     autoSmea: bool = Field(default=False)
-    characterPrompts: List[CharacterPrompt] = []
+    characterPrompts: list[CharacterPrompt] = []
 
-    v4_prompt: Optional[V4PromptFormat] = None
-    v4_negative_prompt: Optional[V4NegativePromptFormat] = None
-    skip_cfg_above_sigma: Optional[int] = None
+    v4_prompt: V4PromptFormat | None = None
+    v4_negative_prompt: V4NegativePromptFormat | None = None
+    skip_cfg_above_sigma: int | None = None
     use_coords: bool = Field(default=False)
     legacy_uc: bool = Field(default=False)
     normalize_reference_strength_multiple: bool = Field(default=True)
@@ -248,17 +248,9 @@ class Metadata(BaseModel):
             and isinstance(data["model"], str)
         ):
             try:
-                # Try to convert string to Model enum
                 data["model"] = Model(data["model"])
             except ValueError:
-                try:
-                    # Try to match by enum value
-                    for model_enum in Model:
-                        if model_enum.value == data["model"]:
-                            data["model"] = model_enum
-                            break
-                except:
-                    raise ValueError(f"Invalid model: {data['model']}")
+                raise ValueError(f"Invalid model: {data['model']}") from None
         return data
 
     @model_validator(mode="after")
@@ -315,13 +307,14 @@ class Metadata(BaseModel):
             self.width = (self.width + 63) // 64 * 64
             self.height = (self.height + 63) // 64 * 64
 
-        if not self.width * self.height in range(64 * 64, 3047424 + 1):
+        if self.width * self.height not in range(64 * 64, 3047424 + 1):
             raise ValueError(
                 f"The maximum allowed total resolution is (3047424 px), got {self.width}x{self.height}={self.width * self.height}."
             )
 
     def handle_stream(self):
-        if is_v4_model(self.model) and self.action == Action.GENERATE:
+        # All V4/V4.5 actions go through /ai/generate-image-stream with msgpack framing
+        if is_v4_model(self.model):
             self.stream = "msgpack"
 
     def handle_inpaint_img2img_strength(self) -> None:
@@ -350,19 +343,13 @@ class Metadata(BaseModel):
         Handle the character prompts default values, if parameters are not set. and deduplicate the tags in the prompt and uc.
         """
 
-        if self.action != Action.GENERATE:
-            self.characterPrompts = None
-
         if not self.characterPrompts:
             return
 
-        # Set default values for character prompts
+        # Deduplicate tags in character prompts
         for cp in self.characterPrompts:
-            cp.enabled = cp.enabled or True
-            cp.prompt = self.deduplicate_tags(cp.prompt) if cp.prompt else "1girl, cute"
-            cp.uc = self.deduplicate_tags(cp.uc) if cp.uc else "lowres, aliasing,"
-            cp.center.x = cp.center.x or 0.5
-            cp.center.y = cp.center.y or 0.5
+            cp.prompt = self.deduplicate_tags(cp.prompt)
+            cp.uc = self.deduplicate_tags(cp.uc)
 
     def handle_v4_prompt(self):
         """
@@ -375,10 +362,10 @@ class Metadata(BaseModel):
             return
 
         # skip if model is not V4/V4.5
-        if not is_v4_model(self.model) or self.action == Action.IMG2IMG:
+        if not is_v4_model(self.model):
             return
 
-        char_captions: List[CharacterCaption] = []
+        char_captions: list[CharacterCaption] = []
         for cp in self.characterPrompts:
             if cp.enabled:
                 char_captions.append(
@@ -405,10 +392,10 @@ class Metadata(BaseModel):
             return
 
         # skip if model is not V4/V4.5
-        if not is_v4_model(self.model) or self.action == Action.IMG2IMG:
+        if not is_v4_model(self.model):
             return
 
-        char_captions: List[CharacterCaption] = []
+        char_captions: list[CharacterCaption] = []
         for cp in self.characterPrompts:
             if cp.enabled and cp.uc:
                 char_captions.append(
@@ -557,9 +544,14 @@ class Metadata(BaseModel):
 
         # Sampler handling
         # If sampler is k_euler_ancestral, set deliberate_euler_ancestral_bug and prefer_brownian
-        if self.sampler == Sampler.EULER_ANC and self.action == Action.GENERATE:
+        if self.sampler == Sampler.EULER_ANC and is_v4_model(self.model):
             self.deliberate_euler_ancestral_bug = False
             self.prefer_brownian = True
+
+        # V3/Furry payloads use sm/sm_dyn instead of the V4 fields
+        if not is_v4_model(self.model):
+            self.sm = self.sm or False
+            self.sm_dyn = self.sm_dyn or False
 
     def get_max_n_samples(self) -> int:
         """
@@ -677,7 +669,7 @@ class Metadata(BaseModel):
         # Reassemble the prompt with the same delimiter pattern (comma + space)
         return ", ".join(deduplicated_tags)
 
-    def model_dump_for_api(self) -> Dict[str, Any]:
+    def model_dump_for_api(self) -> dict[str, Any]:
         """
         Generate a request payload suitable for the NovelAI API.
 
@@ -688,6 +680,23 @@ class Metadata(BaseModel):
         """
         # Get standard parameters
         params = self.model_dump(mode="json", exclude_none=True)
+
+        # The web client always sends this key, as null when Variety Boost is off
+        params["skip_cfg_above_sigma"] = self.skip_cfg_above_sigma
+
+        # V3/Furry payloads carry sm/sm_dyn but none of the V4-specific fields
+        # (captured web payloads in examples/payloads/nai3.json)
+        if not is_v4_model(self.model):
+            for key in (
+                "autoSmea",
+                "use_coords",
+                "legacy_uc",
+                "normalize_reference_strength_multiple",
+                "deliberate_euler_ancestral_bug",
+                "prefer_brownian",
+                "inpaintImg2ImgStrength",
+            ):
+                params.pop(key, None)
 
         # Create the full request payload
         payload = {

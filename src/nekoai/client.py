@@ -1,9 +1,12 @@
 import asyncio
+import base64
 import io
 import zipfile
 from asyncio import Task
+from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import TYPE_CHECKING, AsyncGenerator, Optional
+from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 from httpx import AsyncClient, ReadTimeout
 from loguru import logger
@@ -21,16 +24,15 @@ from .types import (
 if TYPE_CHECKING:
     from .types.director import DirectorRequest
 
-from .constant import HEADERS, Endpoint, Host, Model
+from .auth import encode_access_key, prep_headers
+from .constant import HEADERS, Controlnet, Endpoint, Host, Model, is_v4_model
 from .exceptions import TimeoutError
-from .utils import (
-    encode_access_key,
-    get_image_hash,
+from .imaging import get_image_hash, parse_image
+from .response import (
+    StreamingMsgpackParser,
     handle_msgpack_content,
     handle_response_with_content,
     handle_zip_content,
-    parse_image,
-    prep_headers,
 )
 
 
@@ -46,6 +48,12 @@ class NovelAI:
         NovelAI password (required if token is not provided)
     token: `str`, optional
         NovelAI access token (required if username/password is not provided)
+    host: `str`, optional
+        Base URL for image endpoints, defaults to the official https://image.novelai.net.
+        Pass a custom base URL to use a reverse proxy or self-hosted gateway
+    api_host: `str`, optional
+        Base URL for account endpoints (login, subscription, user data),
+        defaults to the official https://api.novelai.net
     proxy: `dict`, optional
         Proxy to use for the client
 
@@ -71,6 +79,7 @@ class NovelAI:
         password: str = None,
         token: str = None,
         host: str = Host.WEB.value,
+        api_host: str = Host.API.value,
         proxy: dict | None = None,
         verbose: bool = False,
     ):
@@ -78,7 +87,8 @@ class NovelAI:
         if not self.user.validate_auth():
             raise ValueError("Either username/password or token must be provided")
 
-        self.host = host
+        self.host = host.rstrip("/")
+        self.api_host = api_host.rstrip("/")
         self.proxy = proxy
         self.client: AsyncClient | None = None
 
@@ -106,7 +116,10 @@ class NovelAI:
         close_delay: `float`, optional
             Time to wait before auto-closing the client in seconds. Effective only if `auto_close` is `True`
         """
-        self.client = AsyncClient(timeout=timeout, proxy=self.proxy, headers=HEADERS)
+        headers = HEADERS.copy()
+        # Host header must match the actual target, including custom base URLs
+        headers["Host"] = urlparse(self.host).netloc
+        self.client = AsyncClient(timeout=timeout, proxy=self.proxy, headers=headers)
         self.client.headers["Authorization"] = f"Bearer {await self.get_access_token()}"
 
         self.running = True
@@ -130,9 +143,10 @@ class NovelAI:
         if delay:
             await asyncio.sleep(delay)
 
-        if self.close_task:
+        # Don't cancel ourselves when invoked via the auto-close task
+        if self.close_task and self.close_task is not asyncio.current_task():
             self.close_task.cancel()
-            self.close_task = None
+        self.close_task = None
 
         if self.client:
             await self.client.aclose()
@@ -173,13 +187,24 @@ class NovelAI:
             return self.user.token
 
         access_key = encode_access_key(self.user)
+
         response = await self.client.post(
-            url=f"{Host.API.value}{Endpoint.LOGIN.value}",
+            url=f"{self.api_host}{Endpoint.LOGIN.value}",
             json={"key": access_key},
+            headers=self._api_headers(),
         )
 
         handle_response_with_content(response, response.content)
         return response.json()["accessToken"]
+
+    def _api_headers(self) -> dict[str, str]:
+        """Build per-request headers targeting the account API host."""
+        headers = prep_headers(self.client.headers)
+        # httpx lowercases header names, so replace in place to avoid
+        # sending a duplicate Host header
+        headers.pop("Host", None)
+        headers["host"] = urlparse(self.api_host).netloc
+        return headers
 
     @validate_call
     async def generate_image(
@@ -239,8 +264,7 @@ class NovelAI:
                 logger.info(f"[Headers] for image generation: {headers}")
                 logger.info(f"[Payload] for image generation: {payload}")
 
-            is_v4_model = metadata.model.value.startswith("nai-diffusion-4")
-            if is_v4_model:
+            if is_v4_model(metadata.model):
                 if stream:
                     return self._stream_v4_events(payload, headers)
                 else:
@@ -250,10 +274,10 @@ class NovelAI:
                 content = await self._handle_v3_request(payload, headers)
                 return handle_zip_content(content)
 
-        except ReadTimeout:
+        except ReadTimeout as e:
             raise TimeoutError(
                 "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
-            )
+            ) from e
 
     async def _handle_v3_request(self, payload: dict, headers: dict) -> bytes:
         """
@@ -307,12 +331,12 @@ class NovelAI:
                 content = await response.aread()
                 handle_response_with_content(response, content)
 
-            raw_data = b""
+            raw_data = bytearray()
             # Collect all chunks
             async for chunk in response.aiter_bytes():
-                raw_data += chunk
+                raw_data.extend(chunk)
 
-            return raw_data
+            return bytes(raw_data)
 
     async def _stream_v4_events(
         self, payload: dict, headers: dict
@@ -332,8 +356,6 @@ class NovelAI:
         `MsgpackEvent`
             Individual msgpack events as they are received and parsed
         """
-        from .utils import StreamingMsgpackParser
-
         async with self.client.stream(
             "POST",
             url=f"{self.host}{Endpoint.IMAGE_STREAM.value}",
@@ -387,10 +409,10 @@ class NovelAI:
                 headers=prep_headers(self.client.headers),
                 json=payload,
             )
-        except ReadTimeout:
+        except ReadTimeout as e:
             raise TimeoutError(
                 "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
-            )
+            ) from e
 
         handle_response_with_content(response, response.content)
 
@@ -422,7 +444,8 @@ class NovelAI:
         `None`
             The function modifies the metadata object in place, adding the encoded vibe tokens
         """
-        if metadata.model != Model.V4_CUR or not metadata.reference_image_multiple:
+        # V3 models take raw base64 reference images; V4/V4.5 models require vibe tokens
+        if not is_v4_model(metadata.model) or not metadata.reference_image_multiple:
             return
 
         reference_image_multiple = []
@@ -452,17 +475,18 @@ class NovelAI:
                     "model": metadata.model.value,
                 }
 
-                # Use the async client properly
                 response = await self.client.post(
-                    url=f"{Host.WEB.value}{Endpoint.ENCODE_VIBE.value}",
+                    url=f"{self.host}{Endpoint.ENCODE_VIBE.value}",
+                    headers=prep_headers(self.client.headers),
                     json=payload,
                 )
 
                 # Raise an exception if the response is not valid
                 handle_response_with_content(response, response.content)
 
-                # Get and cache the vibe token
-                vibe_token = response.content
+                # The endpoint returns the vibe token as raw bytes; the
+                # generate payload expects it base64-encoded
+                vibe_token = base64.b64encode(response.content).decode("utf-8")
                 self.vibe_cache[cache_key] = vibe_token
 
             # Add both the original image and its vibe token
@@ -486,8 +510,12 @@ class NovelAI:
         Returns
         -------
         `bytes`
-            The decompressed response content
+            The decompressed response content. If the content is not a zip
+            archive, it is returned as-is (some endpoints return raw images).
         """
+        if not compressed_data.startswith(b"PK"):
+            return compressed_data
+
         with zipfile.ZipFile(io.BytesIO(compressed_data)) as zf:
             file_names = zf.namelist()
             return zf.read(file_names[0])
@@ -594,7 +622,7 @@ class NovelAI:
         return await self.use_director_tool(request)
 
     async def colorize(
-        self, image, prompt: Optional[str] = "", defry: Optional[int] = 0
+        self, image, prompt: str | None = "", defry: int | None = 0
     ) -> "Image":
         """
         Colorize a line art or sketch using the Director tool.
@@ -630,7 +658,7 @@ class NovelAI:
         self,
         image,
         emotion: "EmotionOptions",
-        prompt: Optional[str] = "",
+        prompt: str | None = "",
         emotion_level: "EmotionLevel" = EmotionLevel.NORMAL,
     ) -> "Image":
         """
@@ -676,6 +704,188 @@ class NovelAI:
             emotion_level=emotion_level,
         )
         return await self.use_director_tool(request)
+
+    async def upscale(self, image, scale: int = 4) -> "Image":
+        """
+        Upscale an image using the /ai/upscale endpoint.
+
+        Parameters
+        ----------
+        image: Various types accepted:
+            - `str`: Path to an image file or base64-encoded image
+            - `pathlib.Path`: Path object pointing to an image file
+            - `bytes`: Raw image bytes
+            - `io.BytesIO`: BytesIO object containing image data
+        scale: `int`, optional
+            Upscaling factor, either 2 or 4 (default)
+
+        Returns
+        -------
+        `Image`
+            The upscaled image
+        """
+        await self._ensure_initialized()
+
+        if self.auto_close:
+            await self.reset_close_task()
+
+        width, height, base64_image = parse_image(image)
+        payload = {
+            "image": base64_image,
+            "width": width,
+            "height": height,
+            "scale": scale,
+        }
+
+        try:
+            # Upscale is served by the account API host, not the image host
+            response = await self.client.post(
+                url=f"{self.api_host}{Endpoint.UPSCALE.value}",
+                headers=self._api_headers(),
+                json=payload,
+            )
+        except ReadTimeout as e:
+            raise TimeoutError(
+                "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
+            ) from e
+
+        handle_response_with_content(response, response.content)
+
+        image_data = self.handle_decompression(response.content)
+        return Image(
+            filename=f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_upscaled.png",
+            data=image_data,
+        )
+
+    async def annotate_image(self, image, model: Controlnet) -> "Image":
+        """
+        Generate a ControlNet condition mask from an image using the /ai/annotate-image endpoint.
+
+        The returned mask can be passed as `controlnet_condition` to `generate_image`.
+
+        Parameters
+        ----------
+        image: Various types accepted:
+            - `str`: Path to an image file or base64-encoded image
+            - `pathlib.Path`: Path object pointing to an image file
+            - `bytes`: Raw image bytes
+            - `io.BytesIO`: BytesIO object containing image data
+        model: `Controlnet`
+            ControlNet annotator to use, refer to `nekoai.constant.Controlnet`
+
+        Returns
+        -------
+        `Image`
+            The annotated condition image
+        """
+        await self._ensure_initialized()
+
+        if self.auto_close:
+            await self.reset_close_task()
+
+        if not isinstance(model, Controlnet):
+            model = Controlnet(model)
+
+        _, _, base64_image = parse_image(image)
+        payload = {
+            "model": model.value,
+            "parameters": {"image": base64_image},
+        }
+
+        try:
+            # Annotate is served by the account API host, not the image host
+            response = await self.client.post(
+                url=f"{self.api_host}{Endpoint.ANNOTATE.value}",
+                headers=self._api_headers(),
+                json=payload,
+            )
+        except ReadTimeout as e:
+            raise TimeoutError(
+                "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
+            ) from e
+
+        handle_response_with_content(response, response.content)
+
+        image_data = self.handle_decompression(response.content)
+        return Image(
+            filename=f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{model.value}.png",
+            data=image_data,
+        )
+
+    async def suggest_tags(
+        self, prompt: str, model: Model = Model.V4_5, lang: str = "en"
+    ) -> list[dict]:
+        """
+        Get tag suggestions for an incomplete tag via /ai/generate-image/suggest-tags.
+
+        Parameters
+        ----------
+        prompt: `str`
+            Incomplete tag to get suggestions for
+        model: `Model`, optional
+            Model to get suggestions for, defaults to V4.5 full
+        lang: `str`, optional
+            Language of the tag, "en" (default) or "jp"
+
+        Returns
+        -------
+        `list[dict]`
+            Suggested tags, each with `tag`, `count` and `confidence` keys
+        """
+        await self._ensure_initialized()
+
+        if self.auto_close:
+            await self.reset_close_task()
+
+        response = await self.client.get(
+            url=f"{self.host}{Endpoint.SUGGEST_TAGS.value}",
+            headers=prep_headers(self.client.headers),
+            params={"model": model.value, "prompt": prompt, "lang": lang},
+        )
+
+        handle_response_with_content(response, response.content)
+        return response.json().get("tags", [])
+
+    async def get_subscription(self) -> dict:
+        """
+        Get subscription information from the /user/subscription endpoint.
+
+        Useful to check the subscription tier (e.g. Opus for free generations)
+        and the remaining Anlas balance (`trainingStepsLeft`).
+
+        Returns
+        -------
+        `dict`
+            Subscription information as returned by the API
+        """
+        await self._ensure_initialized()
+
+        response = await self.client.get(
+            url=f"{self.api_host}{Endpoint.SUBSCRIPTION.value}",
+            headers=self._api_headers(),
+        )
+
+        handle_response_with_content(response, response.content)
+        return response.json()
+
+    async def get_user_data(self) -> dict:
+        """
+        Get account data (priority, subscription, keystore info) from the /user/data endpoint.
+
+        Returns
+        -------
+        `dict`
+            User data as returned by the API
+        """
+        await self._ensure_initialized()
+
+        response = await self.client.get(
+            url=f"{self.api_host}{Endpoint.USER_DATA.value}",
+            headers=self._api_headers(),
+        )
+
+        handle_response_with_content(response, response.content)
+        return response.json()
 
     async def __aenter__(self):
         """Async context manager entry."""

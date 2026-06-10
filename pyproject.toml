@@ -1,17 +1,17 @@
 [build-system]
-requires = ["setuptools>=77.0.3", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.7.19,<2.0.0"]
+build-backend = "uv_build"
 
 [project]
 name = "nekoai-api"
-version = "0.2.0"
+version = "0.3.1"
 description = "🎨 A lightweight async Python API for NovelAI image generation and director tools."
 keywords = ["API", "async", "NovelAI", "AI", "image generation", "nai3", "nai4"]
 readme = "README.md"
 authors = [
     {name = "Nya Foundation Team (k3scat)", email = "k3scat@gmail.com"},
 ]
-license = "AGPL-3.0"
+license = "AGPL-3.0-only"
 license-files = ["LICENSE"]
 
 classifiers = [
@@ -22,10 +22,11 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "httpx>=0.25.2",
+    "httpx[brotli]>=0.25.2",
     "pydantic>=2.5.3",
     "loguru>=0.7.2",
     "argon2-cffi>=21.3.0",
@@ -37,24 +38,34 @@ Repository = "https://github.com/Nya-Foundation/NekoAI-API"
 Issues = "https://github.com/Nya-Foundation/NekoAI-API/issues"
 
 [project.scripts]
-nekoai = "nekoai.__main__:main"
+nekoai = "nekoai.cli:main"
 
-[tool.setuptools]
-package-dir = {"" = "."}  # Use current directory as source root
-include-package-data = true
+[dependency-groups]
+dev = [
+    "ruff>=0.8",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "isort>=8.0.1",
+]
 
-[tool.setuptools.packages.find]
-where = ["."]  # Root directory for discovery
-include = ["nekoai*"] # Include nekoai and its subpackages
+[tool.uv.build-backend]
+module-name = "nekoai"
 
+[tool.ruff]
+target-version = "py310"
+line-length = 88
 
-[tool.setuptools.exclude-package-data]
-"*" = ["*.pyc", "*.pyo", "__pycache__/*"]
+[tool.ruff.lint]
+extend-select = ["I", "UP", "B"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
 
 [tool.semantic_release]
 tag_format = "v{version}"
 version_toml = ["pyproject.toml:project.version"]
-version_variables = ["nekoai/_version.py:__version__"]
+version_variables = ["src/nekoai/_version.py:__version__"]
 build_command = "python -m pip install build && python -m build"
 commit_parser = "conventional"
 commit_message = "chore(release): bump version to v{version} [skip ci]"
