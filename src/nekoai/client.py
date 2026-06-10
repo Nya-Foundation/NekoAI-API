@@ -1,28 +1,15 @@
 import asyncio
 import base64
 import io
+import logging
 import zipfile
 from asyncio import Task
 from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from httpx import AsyncClient, ReadTimeout
-from loguru import logger
 from pydantic import validate_call
-
-from .types import (
-    EmotionLevel,
-    EmotionOptions,
-    Image,
-    Metadata,
-    MsgpackEvent,
-    User,
-)
-
-if TYPE_CHECKING:
-    from .types.director import DirectorRequest
 
 from .auth import encode_access_key, prep_headers
 from .constant import HEADERS, Controlnet, Endpoint, Host, Model, is_v4_model
@@ -33,6 +20,30 @@ from .response import (
     handle_msgpack_content,
     handle_response_with_content,
     handle_zip_content,
+)
+from .types import (
+    EmotionLevel,
+    EmotionOptions,
+    Image,
+    Metadata,
+    MsgpackEvent,
+    User,
+)
+from .types.director import (
+    BackgroundRemovalRequest,
+    ColorizeRequest,
+    DeclutterRequest,
+    DirectorRequest,
+    EmotionRequest,
+    LineArtRequest,
+    SketchRequest,
+)
+
+logger = logging.getLogger(__name__)
+
+TIMEOUT_MESSAGE = (
+    "Request timed out, please try again. If the problem persists, "
+    "consider setting a higher `timeout` value when initiating NovelAI."
 )
 
 
@@ -93,6 +104,13 @@ class NovelAI:
         self.client: AsyncClient | None = None
 
         self.verbose: bool = verbose
+        if verbose:
+            # Make verbose output visible even if the app never configures logging
+            pkg_logger = logging.getLogger(__package__)
+            if not pkg_logger.handlers:
+                pkg_logger.addHandler(logging.StreamHandler())
+                pkg_logger.setLevel(logging.INFO)
+
         self.running: bool = False
         self.auto_close: bool = False
         self.close_delay: float = 300
@@ -129,7 +147,7 @@ class NovelAI:
         if auto_close:
             await self.reset_close_task()
 
-        logger.success("NovelAI client initialized successfully.")
+        logger.info("NovelAI client initialized successfully.")
 
     async def close(self, delay: float = 0) -> None:
         """
@@ -162,9 +180,11 @@ class NovelAI:
         self.close_task = asyncio.create_task(self.close(self.close_delay))
 
     async def _ensure_initialized(self) -> None:
-        """Ensure the client is initialized before making requests."""
+        """Ensure the client is initialized and reset the idle-close timer."""
         if not self.running:
             await self.init(auto_close=self.auto_close, close_delay=self.close_delay)
+        if self.auto_close:
+            await self.reset_close_task()
 
     async def get_access_token(self) -> str:
         """
@@ -250,9 +270,6 @@ class NovelAI:
                 f"Generating image... estimated Anlas cost: {metadata.calculate_cost(is_opus)}"
             )
 
-        if self.auto_close:
-            await self.reset_close_task()
-
         # V4 curated vibe transfer handling
         await self.encode_vibe(metadata)
 
@@ -275,9 +292,7 @@ class NovelAI:
                 return handle_zip_content(content)
 
         except ReadTimeout as e:
-            raise TimeoutError(
-                "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
-            ) from e
+            raise TimeoutError(TIMEOUT_MESSAGE) from e
 
     async def _handle_v3_request(self, payload: dict, headers: dict) -> bytes:
         """
@@ -399,9 +414,6 @@ class NovelAI:
         """
         await self._ensure_initialized()
 
-        if self.auto_close:
-            await self.reset_close_task()
-
         try:
             payload = request.model_dump(mode="json", exclude_none=True)
             response = await self.client.post(
@@ -410,9 +422,7 @@ class NovelAI:
                 json=payload,
             )
         except ReadTimeout as e:
-            raise TimeoutError(
-                "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
-            ) from e
+            raise TimeoutError(TIMEOUT_MESSAGE) from e
 
         handle_response_with_content(response, response.content)
 
@@ -520,106 +530,47 @@ class NovelAI:
             file_names = zf.namelist()
             return zf.read(file_names[0])
 
+    async def _run_director_tool(self, request_cls, image, **kwargs) -> "Image":
+        """Parse the image input and run a Director tool with its dimensions filled in."""
+        width, height, base64_image = parse_image(image)
+        request = request_cls(width=width, height=height, image=base64_image, **kwargs)
+        return await self.use_director_tool(request)
+
     async def lineart(self, image) -> "Image":
         """
         Convert an image to line art using the Director tool.
 
-        Parameters
-        ----------
-        image: Various types accepted:
-            - `str`: Path to an image file or base64-encoded image
-            - `pathlib.Path`: Path object pointing to an image file
-            - `bytes`: Raw image bytes
-            - `io.BytesIO`: BytesIO object containing image data
-            - Any file-like object with read() method
-
-        Returns
-        -------
-        `Image`
-            The processed image
+        `image` accepts a file path (`str`/`Path`), base64 string, raw `bytes`,
+        or a binary file-like object.
         """
-        from .types.director import LineArtRequest
-
-        width, height, base64_image = parse_image(image)
-
-        request = LineArtRequest(width=width, height=height, image=base64_image)
-        return await self.use_director_tool(request)
+        return await self._run_director_tool(LineArtRequest, image)
 
     async def sketch(self, image) -> "Image":
         """
         Convert an image to sketch using the Director tool.
-        Parameters
-        ----------
-        image: Various types accepted:
-            - `str`: Path to an image file or base64-encoded image
-            - `pathlib.Path`: Path object pointing to an image file
-            - `bytes`: Raw image bytes
-            - `io.BytesIO`: BytesIO object containing image data
-            - Any file-like object with read() method
 
-        Returns
-        -------
-        `Image`
-            The processed image
+        `image` accepts a file path (`str`/`Path`), base64 string, raw `bytes`,
+        or a binary file-like object.
         """
-        from .types.director import SketchRequest
-
-        width, height, base64_image = parse_image(image)
-
-        request = SketchRequest(width=width, height=height, image=base64_image)
-        return await self.use_director_tool(request)
+        return await self._run_director_tool(SketchRequest, image)
 
     async def background_removal(self, image) -> "Image":
         """
         Remove background from an image using the Director tool.
 
-        Parameters
-        ----------
-        image: Various types accepted:
-            - `str`: Path to an image file or base64-encoded image
-            - `pathlib.Path`: Path object pointing to an image file
-            - `bytes`: Raw image bytes
-            - `io.BytesIO`: BytesIO object containing image data
-            - Any file-like object with read() method
-
-        Returns
-        -------
-        `Image`
-            The processed image with background removed
+        `image` accepts a file path (`str`/`Path`), base64 string, raw `bytes`,
+        or a binary file-like object.
         """
-        from .types.director import BackgroundRemovalRequest
-
-        width, height, base64_image = parse_image(image)
-
-        request = BackgroundRemovalRequest(
-            width=width, height=height, image=base64_image
-        )
-        return await self.use_director_tool(request)
+        return await self._run_director_tool(BackgroundRemovalRequest, image)
 
     async def declutter(self, image) -> "Image":
         """
         Declutter an image using the Director tool.
 
-        Parameters
-        ----------
-        image: Various types accepted:
-            - `str`: Path to an image file or base64-encoded image
-            - `pathlib.Path`: Path object pointing to an image file
-            - `bytes`: Raw image bytes
-            - `io.BytesIO`: BytesIO object containing image data
-            - Any file-like object with read() method
-
-        Returns
-        -------
-        `Image`
-            The processed image
+        `image` accepts a file path (`str`/`Path`), base64 string, raw `bytes`,
+        or a binary file-like object.
         """
-        from .types.director import DeclutterRequest
-
-        width, height, base64_image = parse_image(image)
-
-        request = DeclutterRequest(width=width, height=height, image=base64_image)
-        return await self.use_director_tool(request)
+        return await self._run_director_tool(DeclutterRequest, image)
 
     async def colorize(
         self, image, prompt: str | None = "", defry: int | None = 0
@@ -629,12 +580,8 @@ class NovelAI:
 
         Parameters
         ----------
-        image: Various types accepted:
-            - `str`: Path to an image file or base64-encoded image
-            - `pathlib.Path`: Path object pointing to an image file
-            - `bytes`: Raw image bytes
-            - `io.BytesIO`: BytesIO object containing image data
-            - Any file-like object with read() method
+        image: file path (`str`/`Path`), base64 string, raw `bytes`,
+            or a binary file-like object
         prompt: str
             Additional prompt for the request
         defry: int, optional
@@ -645,14 +592,9 @@ class NovelAI:
         `Image`
             The colorized image
         """
-        from .types.director import ColorizeRequest
-
-        width, height, base64_image = parse_image(image)
-
-        request = ColorizeRequest(
-            width=width, height=height, image=base64_image, prompt=prompt, defry=defry
+        return await self._run_director_tool(
+            ColorizeRequest, image, prompt=prompt, defry=defry
         )
-        return await self.use_director_tool(request)
 
     async def change_emotion(
         self,
@@ -666,12 +608,8 @@ class NovelAI:
 
         Parameters
         ----------
-        image: Various types accepted:
-            - `str`: Path to an image file or base64-encoded image
-            - `pathlib.Path`: Path object pointing to an image file
-            - `bytes`: Raw image bytes
-            - `io.BytesIO`: BytesIO object containing image data
-            - Any file-like object with read() method
+        image: file path (`str`/`Path`), base64 string, raw `bytes`,
+            or a binary file-like object
         emotion: EmotionOptions
             The target emotion to apply
         prompt: str
@@ -684,8 +622,6 @@ class NovelAI:
         `Image`
             The image with modified emotion
         """
-        from .types.director import EmotionRequest
-
         # Validate inputs are proper enums
         if not isinstance(emotion, EmotionOptions):
             emotion = EmotionOptions(emotion)
@@ -726,9 +662,6 @@ class NovelAI:
         """
         await self._ensure_initialized()
 
-        if self.auto_close:
-            await self.reset_close_task()
-
         width, height, base64_image = parse_image(image)
         payload = {
             "image": base64_image,
@@ -745,9 +678,7 @@ class NovelAI:
                 json=payload,
             )
         except ReadTimeout as e:
-            raise TimeoutError(
-                "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
-            ) from e
+            raise TimeoutError(TIMEOUT_MESSAGE) from e
 
         handle_response_with_content(response, response.content)
 
@@ -780,9 +711,6 @@ class NovelAI:
         """
         await self._ensure_initialized()
 
-        if self.auto_close:
-            await self.reset_close_task()
-
         if not isinstance(model, Controlnet):
             model = Controlnet(model)
 
@@ -800,9 +728,7 @@ class NovelAI:
                 json=payload,
             )
         except ReadTimeout as e:
-            raise TimeoutError(
-                "Request timed out, please try again. If the problem persists, consider setting a higher `timeout` value when initiating NAIClient."
-            ) from e
+            raise TimeoutError(TIMEOUT_MESSAGE) from e
 
         handle_response_with_content(response, response.content)
 
@@ -833,9 +759,6 @@ class NovelAI:
             Suggested tags, each with `tag`, `count` and `confidence` keys
         """
         await self._ensure_initialized()
-
-        if self.auto_close:
-            await self.reset_close_task()
 
         response = await self.client.get(
             url=f"{self.host}{Endpoint.SUGGEST_TAGS.value}",

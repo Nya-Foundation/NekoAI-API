@@ -88,7 +88,6 @@ wheels = [
 ]
 
 [[package]]
-<<<<<<< HEAD
 name = "brotli"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -172,8 +171,6 @@ wheels = [
 ]
 
 [[package]]
-=======
->>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
 name = "certifi"
 version = "2026.5.20"
 source = { registry = "https://pypi.org/simple" }
@@ -322,15 +319,12 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad", size = 73517, upload-time = "2024-12-06T15:37:21.509Z" },
 ]
 
-<<<<<<< HEAD
 [package.optional-dependencies]
 brotli = [
     { name = "brotli", marker = "platform_python_implementation == 'CPython'" },
     { name = "brotlicffi", marker = "platform_python_implementation != 'CPython'" },
 ]
 
-=======
->>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
 [[package]]
 name = "idna"
 version = "3.18"
@@ -350,28 +344,12 @@ wheels = [
 ]
 
 [[package]]
-<<<<<<< HEAD
 name = "isort"
 version = "8.0.1"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ef/7c/ec4ab396d31b3b395e2e999c8f46dec78c5e29209fac49d1f4dace04041d/isort-8.0.1.tar.gz", hash = "sha256:171ac4ff559cdc060bcfff550bc8404a486fee0caab245679c2abe7cb253c78d", size = 769592, upload-time = "2026-02-28T10:08:20.685Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3e/95/c7c34aa53c16353c56d0b802fba48d5f5caa2cdee7958acbcb795c830416/isort-8.0.1-py3-none-any.whl", hash = "sha256:28b89bc70f751b559aeca209e6120393d43fbe2490de0559662be7a9787e3d75", size = 89733, upload-time = "2026-02-28T10:08:19.466Z" },
-]
-
-[[package]]
-=======
->>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
-name = "loguru"
-version = "0.7.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
-    { name = "win32-setctime", marker = "sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/3a/05/a1dae3dffd1116099471c643b8924f5aa6524411dc6c63fdae648c4f1aca/loguru-0.7.3.tar.gz", hash = "sha256:19480589e77d47b8d85b2c827ad95d49bf31b0dcde16593892eb51dd18706eb6", size = 63559, upload-time = "2024-12-06T11:20:56.608Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/29/0348de65b8cc732daa3e33e67806420b2ae89bdce2b04af740289c5c6c8c/loguru-0.7.3-py3-none-any.whl", hash = "sha256:31a33c10c8e1e10422bfd431aeb5d351c7cf7fa671e3c4df004162264b28220c", size = 61595, upload-time = "2024-12-06T11:20:54.538Z" },
 ]
 
 [[package]]
@@ -437,26 +415,18 @@ wheels = [
 
 [[package]]
 name = "nekoai-api"
-version = "0.2.0"
+version = "0.3.1"
 source = { editable = "." }
 dependencies = [
     { name = "argon2-cffi" },
-<<<<<<< HEAD
     { name = "httpx", extra = ["brotli"] },
-=======
-    { name = "httpx" },
->>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
-    { name = "loguru" },
     { name = "msgpack" },
     { name = "pydantic" },
 ]
 
 [package.dev-dependencies]
 dev = [
-<<<<<<< HEAD
     { name = "isort" },
-=======
->>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
@@ -465,22 +435,14 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "argon2-cffi", specifier = ">=21.3.0" },
-<<<<<<< HEAD
     { name = "httpx", extras = ["brotli"], specifier = ">=0.25.2" },
-=======
-    { name = "httpx", specifier = ">=0.25.2" },
->>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
-    { name = "loguru", specifier = ">=0.7.2" },
     { name = "msgpack", specifier = ">=1.1.0" },
     { name = "pydantic", specifier = ">=2.5.3" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-<<<<<<< HEAD
     { name = "isort", specifier = ">=8.0.1" },
-=======
->>>>>>> e384302 (refactor: restructure package for better DX, modernize packaging, expand CLI)
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "ruff", specifier = ">=0.8" },
@@ -783,13 +745,4 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/55/e3/70399cb7dd41c10ac53367ae42139cf4b1ca5f36bb3dc6c9d33acdb43655/typing_inspection-0.4.2.tar.gz", hash = "sha256:ba561c48a67c5958007083d386c3295464928b01faa735ab8547c5692e87f464", size = 75949, upload-time = "2025-10-01T02:14:41.687Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/dc/9b/47798a6c91d8bdb567fe2698fe81e0c6b7cb7ef4d13da4114b41d239f65d/typing_inspection-0.4.2-py3-none-any.whl", hash = "sha256:4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7", size = 14611, upload-time = "2025-10-01T02:14:40.154Z" },
-]
-
-[[package]]
-name = "win32-setctime"
-version = "1.2.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b3/8f/705086c9d734d3b663af0e9bb3d4de6578d08f46b1b101c2442fd9aecaa2/win32_setctime-1.2.0.tar.gz", hash = "sha256:ae1fdf948f5640aae05c511ade119313fb6a30d7eabe25fef9764dca5873c4c0", size = 4867, upload-time = "2024-12-07T15:28:28.314Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e1/07/c6fe3ad3e685340704d314d765b7912993bcb8dc198f0e7a89382d37974b/win32_setctime-1.2.0-py3-none-any.whl", hash = "sha256:95d644c4e708aba81dc3704a116d8cbc974d70b3bdb8be1d150e36be6e9d1390", size = 4083, upload-time = "2024-12-07T15:28:26.465Z" },
 ]

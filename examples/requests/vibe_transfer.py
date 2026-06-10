@@ -12,8 +12,7 @@ import asyncio
 import os
 import sys
 
-from nekoai import Model, NovelAI, Resolution
-from nekoai.utils import parse_image
+from nekoai import Model, NovelAI, Resolution, parse_image
 
 REFERENCE = sys.argv[1] if len(sys.argv) > 1 else "examples/input/example_image.png"
 
