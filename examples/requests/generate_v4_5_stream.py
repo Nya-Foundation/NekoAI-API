@@ -13,12 +13,11 @@ from nekoai import EventType, Model, NovelAI, Resolution
 
 async def main():
     async with NovelAI(token=os.environ["NAI_TOKEN"]) as client:
-        async for event in await client.generate_image(
+        async for event in client.generate_image_stream(
             prompt="1girl, silver hair, blue eyes, white dress, flower garden",
             model=Model.V4_5,
             res_preset=Resolution.NORMAL_PORTRAIT,
             seed=424242,
-            stream=True,
         ):
             if event.event_type == EventType.FINAL:
                 event.image.save("output", "stream_final.png")

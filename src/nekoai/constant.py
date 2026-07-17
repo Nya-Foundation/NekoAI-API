@@ -5,7 +5,6 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.5",
     "Accept-Encoding": "gzip, deflate, br",
     "Content-Type": "application/json",
-    "Host": "image.novelai.net",
     "Origin": "https://novelai.net",
     "Referer": "https://novelai.net",
     "DHT": "1",
@@ -25,19 +24,28 @@ HEADERS = {
 class Host(Enum):
     WEB = "https://image.novelai.net"
     API = "https://api.novelai.net"
+    TEXT = "https://text.novelai.net"
 
 
 class Endpoint(Enum):
+    # Account endpoints. NovelAI blocks third-party requests to /user/* on
+    # api.novelai.net ("update to the image URL"); they are served by the
+    # image host instead (verified live 2026-07).
     LOGIN = "/user/login"
     USER_DATA = "/user/data"
     SUBSCRIPTION = "/user/subscription"
+    # Image endpoints (image host)
     IMAGE = "/ai/generate-image"
     IMAGE_STREAM = "/ai/generate-image-stream"
     DIRECTOR = "/ai/augment-image"
     ENCODE_VIBE = "/ai/encode-vibe"
+    SUGGEST_TAGS = "/ai/generate-image/suggest-tags"
+    # Endpoints still served only by api.novelai.net (404 on the image host)
     UPSCALE = "/ai/upscale"
     ANNOTATE = "/ai/annotate-image"
-    SUGGEST_TAGS = "/ai/generate-image/suggest-tags"
+    # Text endpoints (text host)
+    TEXT = "/ai/generate"
+    TEXT_STREAM = "/ai/generate-stream"
 
 
 class Model(Enum):
@@ -119,3 +127,45 @@ class Noise(Enum):
     KARRAS = "karras"
     EXPONENTIAL = "exponential"
     POLYEXPONENTIAL = "polyexponential"
+
+
+class TextModel(Enum):
+    ERATO = "llama-3-erato-v1"
+    KAYRA = "kayra-v1"
+    CLIO = "clio-v1"
+
+
+class EmotionOptions(Enum):
+    NEUTRAL = "neutral"
+    HAPPY = "happy"
+    SAD = "sad"
+    ANGRY = "angry"
+    SCARED = "scared"
+    SURPRISED = "surprised"
+    TIRED = "tired"
+    EXCITED = "excited"
+    NERVOUS = "nervous"
+    THINKING = "thinking"
+    CONFUSED = "confused"
+    SHY = "shy"
+    DISGUSTED = "disgusted"
+    SMUG = "smug"
+    BORED = "bored"
+    LAUGHING = "laughing"
+    IRRITATED = "irritated"
+    AROUSED = "aroused"
+    EMBARRASSED = "embarrassed"
+    WORRIED = "worried"
+    LOVE = "love"
+    DETERMINED = "determined"
+    HURT = "hurt"
+    PLAYFUL = "playful"
+
+
+class EmotionLevel(Enum):
+    NORMAL = 0
+    SLIGHTLY_WEAK = 1
+    WEAK = 2
+    EVEN_WEAKER = 3
+    VERY_WEAK = 4
+    WEAKEST = 5

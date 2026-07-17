@@ -9,16 +9,24 @@ Authentication is resolved in this order:
 import argparse
 import asyncio
 import json
-import os
 import sys
 
 from ._version import __version__
-from .client import NovelAI
-from .constant import Controlnet, Model, Resolution, Sampler
+from .client import TOKEN_ENV, NovelAI
+from .constant import Action, Controlnet, Model, Resolution, Sampler, TextModel
 from .exceptions import NovelAIError
+from .imaging import parse_image
 from .types import EmotionLevel, EmotionOptions, EventType
 
-TOKEN_ENV = "NAI_TOKEN"
+# generate/inpaint model ids differ; map each base model to its inpainting variant
+INPAINT_VARIANTS = {
+    Model.V4_5: Model.V4_5_INP,
+    Model.V4_5_CUR: Model.V4_5_CUR_INP,
+    Model.V4: Model.V4_INP,
+    Model.V4_CUR: Model.V4_CUR_INP,
+    Model.V3: Model.V3_INP,
+    Model.FURRY: Model.FURRY_INP,
+}
 
 
 def _resolve_enum(enum_cls, value: str):
@@ -37,15 +45,16 @@ def _resolve_enum(enum_cls, value: str):
 
 
 def _make_client(args: argparse.Namespace) -> NovelAI:
-    token = args.token or os.environ.get(TOKEN_ENV)
     kwargs = {"host": args.host} if args.host else {}
-    if token:
-        return NovelAI(token=token, **kwargs)
-    if args.username and args.password:
-        return NovelAI(username=args.username, password=args.password, **kwargs)
-    raise SystemExit(
-        f"error: no credentials. Pass --token, set ${TOKEN_ENV}, or pass --username/--password"
-    )
+    try:
+        if args.username and args.password:
+            return NovelAI(username=args.username, password=args.password, **kwargs)
+        # NovelAI falls back to $NAI_TOKEN when token is None
+        return NovelAI(token=args.token, **kwargs)
+    except ValueError:
+        raise SystemExit(
+            f"error: no credentials. Pass --token, set ${TOKEN_ENV}, or pass --username/--password"
+        ) from None
 
 
 def _add_auth_args(parser: argparse.ArgumentParser) -> None:
@@ -88,9 +97,27 @@ async def _cmd_generate(args) -> None:
     if args.sampler:
         params["sampler"] = _resolve_enum(Sampler, args.sampler)
 
+    if args.image:
+        params["image"] = parse_image(args.image)[2]
+        params["action"] = Action.IMG2IMG
+        if args.strength is not None:
+            params["strength"] = args.strength
+        if args.noise is not None:
+            params["noise"] = args.noise
+    if args.mask:
+        if not args.image:
+            raise SystemExit("error: --mask requires --image")
+        params["mask"] = parse_image(args.mask)[2]
+        params["action"] = Action.INPAINT
+        params["model"] = INPAINT_VARIANTS.get(params["model"], params["model"])
+    if args.reference_image:
+        params["reference_image_multiple"] = [
+            parse_image(ref)[2] for ref in args.reference_image
+        ]
+
     async with _make_client(args) as client:
         if args.stream:
-            async for event in await client.generate_image(stream=True, **params):
+            async for event in client.generate_image_stream(**params):
                 if event.event_type == EventType.FINAL:
                     event.image.save(args.output)
                     print(f"saved {args.output}/{event.image.filename}")
@@ -100,6 +127,20 @@ async def _cmd_generate(args) -> None:
             for image in await client.generate_image(**params):
                 image.save(args.output)
                 print(f"saved {args.output}/{image.filename}")
+
+
+async def _cmd_text(args) -> None:
+    params = {"max_length": args.max_length, "temperature": args.temperature}
+    model = _resolve_enum(TextModel, args.model)
+    async with _make_client(args) as client:
+        if args.stream:
+            async for token in client.generate_text_stream(
+                args.prompt, model=model, **params
+            ):
+                print(token, end="", flush=True)
+            print()
+        else:
+            print(await client.generate_text(args.prompt, model=model, **params))
 
 
 async def _cmd_upscale(args) -> None:
@@ -112,7 +153,9 @@ async def _cmd_upscale(args) -> None:
 async def _cmd_tool(args) -> None:
     async with _make_client(args) as client:
         if args.tool == "colorize":
-            image = await client.colorize(args.image, prompt=args.prompt or "")
+            image = await client.colorize(
+                args.image, prompt=args.prompt or "", defry=args.defry
+            )
         elif args.tool == "emotion":
             if not args.emotion:
                 raise SystemExit("error: --emotion is required for the emotion tool")
@@ -187,6 +230,17 @@ def build_parser() -> argparse.ArgumentParser:
     generate.add_argument(
         "--count", "-n", type=int, default=1, help="number of images (default: 1)"
     )
+    generate.add_argument("--image", "-i", help="base image for img2img/inpainting")
+    generate.add_argument("--mask", help="inpainting mask (white = area to repaint)")
+    generate.add_argument(
+        "--strength", type=float, help="img2img strength 0.01-0.99 (default: 0.3)"
+    )
+    generate.add_argument("--noise", type=float, help="img2img noise 0-0.99")
+    generate.add_argument(
+        "--reference-image",
+        action="append",
+        help="vibe transfer reference image (repeatable)",
+    )
     generate.add_argument(
         "--stream", action="store_true", help="show V4/V4.5 generation progress"
     )
@@ -219,6 +273,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     tool.add_argument("image", help="path to image file")
     tool.add_argument("--prompt", help="extra prompt (colorize/emotion)")
+    tool.add_argument(
+        "--defry", type=int, default=0, help="colorize strength (default: 0)"
+    )
     tool.add_argument("--emotion", help="target emotion (e.g. happy)")
     tool.add_argument(
         "--emotion-level",
@@ -231,6 +288,21 @@ def build_parser() -> argparse.ArgumentParser:
     _add_output_arg(tool)
     _add_auth_args(tool)
     tool.set_defaults(func=_cmd_tool)
+
+    text = subparsers.add_parser("text", help="generate a text continuation")
+    text.add_argument("prompt", help="input text to continue")
+    text.add_argument(
+        "--model", "-m", default="erato", help="text model (default: erato)"
+    )
+    text.add_argument(
+        "--max-length", type=int, default=100, help="max tokens (default: 100)"
+    )
+    text.add_argument(
+        "--temperature", type=float, default=1.0, help="sampling temperature"
+    )
+    text.add_argument("--stream", action="store_true", help="stream tokens as SSE")
+    _add_auth_args(text)
+    text.set_defaults(func=_cmd_text)
 
     tags = subparsers.add_parser("tags", help="suggest completions for a partial tag")
     tags.add_argument("prompt", help="partial tag")
