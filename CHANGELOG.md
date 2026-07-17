@@ -1,6 +1,103 @@
 # CHANGELOG
 
 
+## v0.5.0 (2026-07-17)
+
+### Bug Fixes
+
+- **response**: Avoid filename collisions in multi-sample batches
+  ([`c8e5ee4`](https://github.com/Nya-Foundation/NekoAI-API/commit/c8e5ee47dbccb57037e27ff18cccf4e659db4ed3))
+
+Streamed final/intermediate images now embed the sample index (samp_ix) in their filenames;
+  previously all samples of a batch shared a second-resolution timestamp name and Image.save
+  silently overwrote earlier samples.
+
+Also adds unwrap_content() as the single zip-or-raw unwrapping helper.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+### Chores
+
+- **deps**: Upgrade all locked dependencies, drop redundant isort
+  ([`0cdf6d2`](https://github.com/Nya-Foundation/NekoAI-API/commit/0cdf6d27bfec217ec351d652906bb3dcd387c148))
+
+isort is covered by ruff's import-sorting rules (extend-select I).
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+### Continuous Integration
+
+- Switch format workflow from black/isort to ruff
+  ([`3e342be`](https://github.com/Nya-Foundation/NekoAI-API/commit/3e342bea21cbedb7d9924f6590f5319f9ff08331))
+
+Aligns CI with the project's actual lint/format tooling.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+### Documentation
+
+- Document text generation, streaming API, hosts, and new CLI flags
+  ([`16603b8`](https://github.com/Nya-Foundation/NekoAI-API/commit/16603b8602157d0fd8624c76170a7709de5014bc))
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+- Rewrite README
+  ([`ed29977`](https://github.com/Nya-Foundation/NekoAI-API/commit/ed29977f474a8d7d6209dfd2ba3ddd45c55fc446))
+
+Professional, emoji-free rewrite: features overview, authentication, image/text generation guides,
+  Director tools, CLI reference, configuration (custom hosts, rate limiting), error handling table,
+  and development setup.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+### Features
+
+- Add text generation, fix account-endpoint host migration, split streaming API
+  ([`b64a0d1`](https://github.com/Nya-Foundation/NekoAI-API/commit/b64a0d1b217dec45b490fcaa4fe877cc9301e2c2))
+
+NovelAI now blocks third-party requests to /user/* on api.novelai.net ('update to the image URL');
+  /user/login, /user/subscription and /user/data are routed through the image host (verified live).
+  Upscale and ControlNet annotation remain on the legacy API host, which still serves them.
+
+Text generation (verified live against text.novelai.net): - generate_text() / generate_text_stream()
+  with TextModel (Erato, Kayra, Clio) and TextParams — plain-text I/O via use_string, SSE token
+  streaming - 'nekoai text' CLI subcommand
+
+Client changes: - generate_image() now always returns list[Image]; the stream=True flag is replaced
+  by generate_image_stream(), which raises for non-V4 models - vibe encoding no longer mutates the
+  caller's Metadata (reusing a Metadata across calls previously re-encoded vibe tokens as images) -
+  built-in 429 retry with exponential backoff (max_retries, default 2) and optional client-side
+  throttling (rate_limit seconds between requests) - token falls back to the NAI_TOKEN environment
+  variable - removed the unreliable __del__ cleanup and the Host-header juggling (httpx derives Host
+  from the URL)
+
+Cleanup: - merged types/constant.py into constant.py; dropped the unused DirectorTools enum and dead
+  request factory methods - table-driven quality tags and UC presets (fixes a fragile if/elif chain
+  and wrong ucPreset docs); honest Optional annotations; ship py.typed
+
+CLI: img2img/inpaint (--image/--mask/--strength/--noise, auto-selects the inpainting model variant),
+  vibe transfer (--reference-image), colorize --defry.
+
+Tests cover imaging parsers, msgpack stream parsing across chunk boundaries, prompt helpers, and
+  text payload shapes.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+### Refactoring
+
+- Replace loguru with stdlib logging, drop legacy compat shim
+  ([`029239c`](https://github.com/Nya-Foundation/NekoAI-API/commit/029239cef6033d5d7f5a11fc770e22091ea586bc))
+
+- Remove loguru dependency; log via logging.getLogger under the nekoai namespace. verbose=True
+  attaches a stderr handler if the app has not configured logging, preserving the previous
+  out-of-the-box behavior - Delete nekoai.utils backwards-compat re-export module; parse_image is
+  now exported from the package root (README/examples updated) - client.py cleanup: fold the
+  idle-close timer reset into _ensure_initialized (account endpoints now also reset it), dedupe the
+  timeout error message, collapse the four copy-paste Director tool wrappers into
+  _run_director_tool, hoist lazy director imports - Regenerate uv.lock, which was committed with
+  unresolved merge conflict markers
+
+
 ## v0.4.0 (2026-06-10)
 
 ### Bug Fixes
