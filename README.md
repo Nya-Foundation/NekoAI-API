@@ -240,9 +240,9 @@ can add or adjust detail:
 images = await client.enhance(
     "output/final.png",
     prompt="1girl, silver hair, blue eyes, intricate details",
-    scale=1.5,      # resolution multiplier (web UI offers up to 1.5x)
-    strength=0.4,   # lower = closer to the original
-    noise=0,        # higher may add detail, too high causes artifacts
+    scale=1.5,      # resolution multiplier: 1 or 1.5
+    strength=0.4,   # 0.01-0.99, lower = closer to the original
+    noise=0,        # 0-0.99, higher may add detail, too high causes artifacts
 )
 ```
 

@@ -269,12 +269,21 @@ def build_parser() -> argparse.ArgumentParser:
     enhance.add_argument("image", help="path to image file")
     enhance.add_argument("prompt", help="text prompt guiding the enhancement")
     enhance.add_argument(
-        "--scale", type=float, default=1.0, help="resolution multiplier (default: 1.0)"
+        "--scale",
+        type=float,
+        default=1.0,
+        choices=(1.0, 1.5),
+        help="resolution multiplier (default: 1.0)",
     )
     enhance.add_argument(
-        "--strength", type=float, default=0.4, help="change strength (default: 0.4)"
+        "--strength",
+        type=float,
+        default=0.4,
+        help="change strength, 0.01-0.99 (default: 0.4)",
     )
-    enhance.add_argument("--noise", type=float, default=0, help="extra noise")
+    enhance.add_argument(
+        "--noise", type=float, default=0, help="extra noise, 0-0.99 (default: 0)"
+    )
     enhance.add_argument(
         "--model", "-m", default="v4_5", help="model name or id (default: v4_5)"
     )

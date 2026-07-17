@@ -416,13 +416,13 @@ class NovelAI:
             Text prompt guiding the enhancement (usually the original prompt,
             optionally emphasizing aspects the image is lacking)
         scale: `float`, optional
-            Resolution multiplier applied during enhancement (the web UI offers
-            up to 1.5x), defaults to 1.0. The total pixel budget still applies
+            Resolution multiplier, either 1 (default) or 1.5 — the two options
+            the web UI offers. The total pixel budget still applies
         strength: `float`, optional
             How much the pass may change the image (0.01-0.99), defaults to 0.4
         noise: `float`, optional
-            Extra noise; higher values can add detail but may introduce
-            artifacts, defaults to 0
+            Extra noise (0-0.99); higher values can add detail but may
+            introduce artifacts, defaults to 0
         model: `Model`, optional
             Model to enhance with, defaults to V4.5 full
         **kwargs: `Any`
@@ -433,6 +433,9 @@ class NovelAI:
         `list[novelai.Image]`
             The enhanced image(s)
         """
+        if scale not in (1, 1.5):
+            raise ValueError(f"scale must be 1 or 1.5 (as in the web UI), got {scale}")
+
         width, height, base64_image = parse_image(image)
 
         metadata = Metadata(

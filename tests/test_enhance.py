@@ -1,5 +1,6 @@
 """Enhance builds a scaled img2img request without network access."""
 
+import pytest
 from test_imaging import make_png
 
 from nekoai import Action, Model, NovelAI
@@ -39,3 +40,15 @@ async def test_enhance_defaults_keep_original_resolution(monkeypatch):
     meta = captured["metadata"]
     assert (meta.width, meta.height) == (1024, 1024)
     assert meta.seed == 7
+
+
+async def test_enhance_rejects_unsupported_scale():
+    client = NovelAI(token="x")
+    with pytest.raises(ValueError, match="scale must be 1 or 1.5"):
+        await client.enhance(make_png(64, 64), "x", scale=1.25)
+
+
+async def test_enhance_rejects_out_of_range_strength():
+    client = NovelAI(token="x")
+    with pytest.raises(ValueError):  # pydantic validation on Metadata.strength
+        await client.enhance(make_png(64, 64), "x", strength=1.5)
