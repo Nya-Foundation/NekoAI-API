@@ -36,6 +36,7 @@ the website sends.
 | 🎬 **Real-time streaming** | Watch every denoising step as an async event stream |
 | 🖌️ **All actions** | Text-to-image, img2img, inpainting, vibe transfer (auto vibe encoding with caching) |
 | 🛠️ **Director tools** | Line art, sketch, background removal, declutter, colorize, emotion change |
+| 📝 **Text generation** | Story continuation with Erato/Kayra/Clio, plain text in/out, token streaming |
 | 🔧 **Utilities** | Upscaling, tag suggestions, ControlNet annotation, subscription/Anlas info |
 | 🖥️ **CLI** | `nekoai` command covering generation, tools, and account queries |
 | 🌐 **Custom hosts** | Point image and account endpoints at your own reverse proxy or gateway |
@@ -143,17 +144,16 @@ images = await client.generate_image(
 
 ### Real-time Streaming (V4/V4.5)
 
-With `stream=True`, `generate_image` returns an async event stream so you can watch
-each denoising step — useful for progress UIs and timelapses:
+`generate_image_stream` yields an async event stream so you can watch each
+denoising step — useful for progress UIs and timelapses:
 
 ```python
 from nekoai import EventType
 
-async for event in await client.generate_image(
+async for event in client.generate_image_stream(
     prompt="1girl, cute, anime style",
     model=Model.V4_5,
     res_preset=Resolution.NORMAL_PORTRAIT,
-    stream=True,
 ):
     if event.event_type == EventType.INTERMEDIATE:
         print(f"step {event.step_ix} (sigma={event.sigma:.2f})")
@@ -161,8 +161,8 @@ async for event in await client.generate_image(
         event.image.save("output", "final.png")
 ```
 
-In batch mode (`stream=False`, the default) the same call returns `list[Image]`
-once generation completes. V3 models always return final images directly.
+`generate_image` returns `list[Image]` once generation completes and works with
+every model; streaming requires a V4/V4.5 model.
 
 ### Image to Image
 
@@ -250,6 +250,27 @@ result = await client.change_emotion(
 result.save("output")
 ```
 
+## Text Generation
+
+Continue a story with NovelAI's text models (Erato, Kayra, Clio) — plain text in,
+plain text out, no tokenizer needed. Extra sampling parameters are passed through
+to the API unchanged:
+
+```python
+from nekoai import TextModel
+
+output = await client.generate_text(
+    "The dragon circled the tower once more,",
+    model=TextModel.ERATO,
+    max_length=150,
+    temperature=1.0,
+)
+
+# Or stream tokens as they are generated:
+async for token in client.generate_text_stream("Once upon a time,", max_length=50):
+    print(token, end="", flush=True)
+```
+
 ## Utilities
 
 ```python
@@ -281,6 +302,11 @@ nekoai login <username> <password>          # exchange credentials for a token
 export NAI_TOKEN="your_access_token"
 nekoai generate "1girl, cute" -m v4_5 -s 832x1216 --steps 28 -n 2
 nekoai generate "1girl, cute" --stream      # live step progress (V4/V4.5)
+nekoai generate "1girl, fantasy outfit" --image source.png --strength 0.5   # img2img
+nekoai generate "detailed background" --image base.png --mask mask.png      # inpaint
+nekoai generate "landscape, sunset" --reference-image style.png  # vibe transfer
+
+nekoai text "Once upon a time," --max-length 80 --stream
 
 nekoai tool lineart image.png               # also: sketch, bg-removal, declutter,
 nekoai tool emotion image.png --emotion happy  # colorize, emotion, annotate
@@ -291,15 +317,28 @@ nekoai subscription
 
 ## Custom Hosts
 
-Both the image host and the account host can point at a custom base URL (reverse
-proxy, self-hosted gateway). The `Host` header is derived from the URL automatically.
+Every host can point at a custom base URL (reverse proxy, self-hosted gateway).
+`host` serves image and account endpoints, `text_host` serves text generation, and
+`api_host` covers the few endpoints still served only by the legacy API host
+(upscale, ControlNet annotation).
 
 ```python
 client = NovelAI(
     token="your_access_token",
-    host="https://your-image-proxy.example.com",   # default: https://image.novelai.net
-    api_host="https://your-api-proxy.example.com", # default: https://api.novelai.net
+    host="https://your-image-proxy.example.com",      # default: https://image.novelai.net
+    text_host="https://your-text-proxy.example.com",  # default: https://text.novelai.net
+    api_host="https://your-api-proxy.example.com",    # default: https://api.novelai.net
 )
+```
+
+## Rate Limiting & Retries
+
+The client retries rate-limited requests (HTTP 429) with exponential backoff
+(`max_retries`, default 2) and can space out requests client-side — useful for
+batch generation:
+
+```python
+client = NovelAI(token="...", rate_limit=10)  # at least 10s between requests
 ```
 
 ## Examples
