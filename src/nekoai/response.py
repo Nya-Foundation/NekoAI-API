@@ -94,6 +94,16 @@ def parse_zip_content(zip_data: bytes) -> Generator[bytes, None, None]:
             yield zip_file.read(filename)
 
 
+def unwrap_content(data: bytes) -> bytes:
+    """
+    Return the first file of a zip archive, or the data unchanged if it is
+    not zipped (some endpoints return a raw image, others a single-file zip).
+    """
+    if not data.startswith(b"PK"):
+        return data
+    return next(parse_zip_content(data))
+
+
 def handle_msgpack_content(msgpack_data: bytes) -> list[Image]:
     """
     Parse msgpack stream data and return the final images.
@@ -130,14 +140,16 @@ def _create_msgpack_event(obj: dict) -> MsgpackEvent:
             f"Unsupported image format in msgpack data: {image_data[:16].hex()}"
         )
 
+    # Include the sample index so multi-sample batches don't collide on
+    # second-resolution timestamps (Image.save would silently overwrite)
     event_type = obj["event_type"]
+    samp_ix = obj.get("samp_ix", 0)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     if event_type == "final":
-        filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_final.{extension}"
+        filename = f"{timestamp}_p{samp_ix}_final.{extension}"
     else:
-        step_ix = obj.get("step_ix", "unknown")
-        filename = (
-            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_step_{step_ix:02d}.{extension}"
-        )
+        step_ix = obj.get("step_ix", 0)
+        filename = f"{timestamp}_p{samp_ix}_step_{step_ix:02d}.{extension}"
 
     image = Image(filename=filename, data=image_data)
 
