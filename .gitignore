@@ -176,3 +176,6 @@ cython_debug/
 # Examples and test files
 examples/input/*
 examples/output/*
+# generated images and local tool state
+output/
+.serena/

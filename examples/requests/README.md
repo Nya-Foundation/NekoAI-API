@@ -48,6 +48,14 @@ as the first argument and default to `examples/input/example_image.png`.
 | `colorize.py` | Colorize line art (defaults to `examples/input/lineart.png`) | free |
 | `change_emotion.py` | Change a character's emotion | free |
 
+## Text Generation
+
+| Script | What it shows | Cost |
+|---|---|---|
+| `generate_text.py` | Story continuation with Erato/Kayra, batch + token streaming | free** |
+
+\** Text generation is included in the subscription (no Anlas).
+
 ## Other Endpoints
 
 | Script | What it shows | Cost |

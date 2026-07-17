@@ -4,7 +4,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from nekoai.constant import (
+from ..constant import (
     Action,
     Controlnet,
     Model,
@@ -13,13 +13,71 @@ from nekoai.constant import (
     Sampler,
     is_v4_model,
 )
-from nekoai.types.parameters import (
+from .parameters import (
     CharacterCaption,
     CharacterPrompt,
     V4CaptionFormat,
     V4NegativePromptFormat,
     V4PromptFormat,
 )
+
+# Quality tags appended to the prompt when qualityToggle is on, per model family.
+QUALITY_TAGS: dict[Model, str] = {
+    Model.V4_5: "very aesthetic, masterpiece, no text",
+    Model.V4_5_CUR: "location, masterpiece, no text, -0.8::feet::, rating:general",
+    Model.V4: "no text, best quality, very aesthetic, absurdres",
+    Model.V4_CUR: "rating:general, amazing quality, very aesthetic, absurdres",
+    Model.V3: "best quality, amazing quality, very aesthetic, absurdres",
+    Model.FURRY: "{best quality}, {amazing quality}",
+}
+
+# Undesired content presets prepended to the negative prompt, per model family.
+# Preset meanings vary by model (e.g. V4.5: 0 Heavy, 1 Light, 2 Furry Focus,
+# 3 Human Focus); missing entries mean "no preset text" for that value.
+UC_PRESETS: dict[Model, dict[int, str]] = {
+    Model.V4_5: {
+        0: "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+        1: "nsfw, lowres, artistic error, scan artifacts, worst quality, bad quality, jpeg artifacts, multiple views, very displeasing, too many watermarks, negative space, blank page",
+        2: "nsfw, {worst quality}, distracting watermark, unfinished, bad quality, {widescreen}, upscale, {sequence}, {{grandfathered content}}, blurred foreground, chromatic aberration, sketch, everyone, [sketch background], simple, [flat colors], ych (character), outline, multiple scenes, [[horror (theme)]], comic",
+        3: "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page, @_@, mismatched pupils, glowing eyes, bad anatomy",
+    },
+    Model.V4_5_CUR: {
+        0: "blurry, lowres, upscaled, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, negative space, blank page",
+        1: "blurry, lowres, upscaled, artistic error, scan artifacts, jpeg artifacts, logo, too many watermarks, negative space, blank page",
+        2: "blurry, lowres, upscaled, artistic error, film grain, scan artifacts, bad anatomy, bad hands, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, @_@, mismatched pupils, glowing eyes, negative space, blank page",
+    },
+    Model.V4: {
+        0: "blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, multiple views, logo, too many watermarks",
+        1: "blurry, lowres, error, worst quality, bad quality, jpeg artifacts, very displeasing",
+    },
+    Model.V4_CUR: {
+        0: "blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, logo, dated, signature, multiple views, gigantic breasts",
+        1: "blurry, lowres, error, worst quality, bad quality, jpeg artifacts, very displeasing, logo, dated, signature",
+    },
+    Model.V3: {
+        0: "lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract]",
+        1: "lowres, jpeg artifacts, worst quality, watermark, blurry, very displeasing",
+        2: "lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract], bad anatomy, bad hands, @_@, mismatched pupils, heart-shaped pupils, glowing eyes",
+    },
+    Model.FURRY: {
+        0: "{{worst quality}}, [displeasing], {unusual pupils}, guide lines, {{unfinished}}, {bad}, url, artist name, {{tall image}}, mosaic, {sketch page}, comic panel, impact (font), [dated], {logo}, ych, {what}, {where is your god now}, {distorted text}, repeated text, {floating head}, {1994}, {widescreen}, absolutely everyone, sequence, {compression artifacts}, hard translated, {cropped}, {commissioner name}, unknown text, high contrast",
+        1: "{worst quality}, guide lines, unfinished, bad, url, tall image, widescreen, compression artifacts, unknown text",
+    },
+}
+
+# Inpainting variants share their base model's quality tags and UC presets
+_MODEL_FAMILY: dict[Model, Model] = {
+    Model.V4_5_INP: Model.V4_5,
+    Model.V4_5_CUR_INP: Model.V4_5_CUR,
+    Model.V4_INP: Model.V4,
+    Model.V4_CUR_INP: Model.V4_CUR,
+    Model.V3_INP: Model.V3,
+    Model.FURRY_INP: Model.FURRY,
+}
+
+
+def _family(model: Model) -> Model:
+    return _MODEL_FAMILY.get(model, model)
 
 
 class Metadata(BaseModel):
@@ -51,8 +109,8 @@ class Metadata(BaseModel):
     qualityToggle: `bool`, optional
         Whether to automatically append quality tags to the prompt. Refer to https://docs.novelai.net/image/qualitytags.html
     ucPreset: `int`, optional
-        Preset value of undisired content. Refer to https://docs.novelai.net/image/undesiredcontent.html
-        Range: 0-3, 0: Heavy, 1: Light, 2: Human Focus, 3: None
+        Preset value of undesired content. Refer to https://docs.novelai.net/image/undesiredcontent.html
+        Range: 0-3; meaning varies by model (V4.5 full: 0 Heavy, 1 Light, 2 Furry Focus, 3 Human Focus)
 
     | Image settings
     width: `int`, optional
@@ -71,8 +129,8 @@ class Metadata(BaseModel):
     dynamic_thresholding: `bool`, optional
         Whether to enable descrisper. Refer to https://docs.novelai.net/image/stepsguidance.html#decrisper
     seed: `int`, optional
-        Random seed to use for the image (between 0 and 4294967295), defaults to 0
-        Seed 0 means that a random seed will be chosen, but not set in the metadata (so giving a seed yourself is important)
+        Random seed to use for the image (between 0 and 4294967295).
+        Defaults to a randomly chosen seed, so pass one yourself for reproducibility.
         Note: When generating multiple images, each consecutive image adds 1 to the seed parameter.
         This means it can go beyond the limit of 4294967295, making it unreproducible with a single generation
     se_seed: `int`, optional
@@ -186,9 +244,9 @@ class Metadata(BaseModel):
     extra_noise_seed: Annotated[int, Field(ge=0, le=4294967295 - 7)] | None = None
     sampler: Sampler = Sampler.EULER_ANC
 
-    # legacy SMEA fields,
-    sm: bool = None
-    sm_dyn: bool = None
+    # legacy SMEA fields, only sent for V3/Furry payloads
+    sm: bool | None = None
+    sm_dyn: bool | None = None
 
     cfg_rescale: float = Field(default=0, ge=0, le=1, multiple_of=0.02)
     noise_schedule: Noise = Noise.KARRAS
@@ -205,14 +263,14 @@ class Metadata(BaseModel):
     add_original_image: bool = True
     mask: str | None = None
 
-    # Vibe Transfer V3 legacy
-    reference_image_multiple: list[str] = None
-    reference_information_extracted_multiple: list[
-        Annotated[float, Field(ge=0.01, le=1, multiple_of=0.01)]
-    ] = None
-    reference_strength_multiple: list[
-        Annotated[float, Field(ge=0.01, le=1, multiple_of=0.01)]
-    ] = None
+    # Vibe Transfer
+    reference_image_multiple: list[str] | None = None
+    reference_information_extracted_multiple: (
+        list[Annotated[float, Field(ge=0.01, le=1, multiple_of=0.01)]] | None
+    ) = None
+    reference_strength_multiple: (
+        list[Annotated[float, Field(ge=0.01, le=1, multiple_of=0.01)]] | None
+    ) = None
 
     # V4/V4.5 specific fields
     params_version: Literal[1, 2, 3] = 3
@@ -229,13 +287,13 @@ class Metadata(BaseModel):
     prefer_brownian: bool = Field(default=False)
 
     # only for V4.5 full
-    inpaintImg2ImgStrength: int = None
+    inpaintImg2ImgStrength: int | None = None
 
     # Misc
     legacy: bool = False
     legacy_v3_extend: bool = False
 
-    stream: str = None
+    stream: str | None = None
 
     @model_validator(mode="before")
     def validate_model_field(cls, data):
@@ -412,93 +470,23 @@ class Metadata(BaseModel):
 
     def handle_quality_tags(self) -> None:
         """
-        Handle the quality tags in the prompt.
-        If qualityToggle is True, append quality tags to the prompt.
+        If qualityToggle is True, append the model's quality tags to the prompt.
         """
         if not self.qualityToggle:
             return
 
-        quality_tags = ""
-
-        if self.model == Model.V4_5 or self.model == Model.V4_5_INP:
-            quality_tags = ", very aesthetic, masterpiece, no text"
-
-        elif self.model == Model.V4_5_CUR or self.model == Model.V4_5_CUR_INP:
-            quality_tags = (
-                ", location, masterpiece, no text, -0.8::feet::, rating:general"
-            )
-        elif self.model == Model.V4 or self.model == Model.V4_INP:
-            quality_tags = ", no text, best quality, very aesthetic, absurdres"
-
-        elif self.model == Model.V4_CUR or self.model == Model.V4_CUR_INP:
-            quality_tags = (
-                ", rating:general, amazing quality, very aesthetic, absurdres"
-            )
-
-        elif self.model == Model.V3 or self.model == Model.V3_INP:
-            quality_tags = ", best quality, amazing quality, very aesthetic, absurdres"
-
-        elif self.model == Model.FURRY or self.model == Model.FURRY_INP:
-            quality_tags = ", {best quality}, {amazing quality}"
-
-        self.prompt += quality_tags
+        tags = QUALITY_TAGS.get(_family(self.model))
+        if tags:
+            self.prompt += ", " + tags
 
     def handle_uc_preset(self) -> None:
         """
-        Handle the ucPreset in the prompt (might vary by model).
-        V4 models example:
-        If ucPreset is 0, append heavy undesired content tags to the negative prompt.
-        If ucPreset is 1, append light undesired content tags to the negative prompt.
-        If ucPreset is 2, append human focus undesired content tags to the negative prompt.
-        if ucPreset is 3, append none undesired content tags to the negative prompt.
+        Prepend the model's ucPreset tags to the negative prompt.
+        Preset meanings vary by model; see `UC_PRESETS`.
         """
-        uc = ""
-
-        if self.model == Model.V4_5 or self.model == Model.V4_5_INP:
-            if self.ucPreset == 0:  # Heavy
-                uc = "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page"
-            elif self.ucPreset == 1:  # Light
-                uc = "nsfw, lowres, artistic error, scan artifacts, worst quality, bad quality, jpeg artifacts, multiple views, very displeasing, too many watermarks, negative space, blank page"
-            elif self.ucPreset == 2:  # Furry Focus
-                uc = "nsfw, {worst quality}, distracting watermark, unfinished, bad quality, {widescreen}, upscale, {sequence}, {{grandfathered content}}, blurred foreground, chromatic aberration, sketch, everyone, [sketch background], simple, [flat colors], ych (character), outline, multiple scenes, [[horror (theme)]], comic"
-            elif self.ucPreset == 3:  # Human Focus
-                uc = "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page, @_@, mismatched pupils, glowing eyes, bad anatomy"
-
-        if self.model == Model.V4_5_CUR or self.model == Model.V4_5_CUR_INP:
-            if self.ucPreset == 0:
-                uc = "blurry, lowres, upscaled, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, negative space, blank page"
-            elif self.ucPreset == 1:
-                uc = "blurry, lowres, upscaled, artistic error, scan artifacts, jpeg artifacts, logo, too many watermarks, negative space, blank page"
-            elif self.ucPreset == 2:
-                uc = "blurry, lowres, upscaled, artistic error, film grain, scan artifacts, bad anatomy, bad hands, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, halftone, multiple views, logo, too many watermarks, @_@, mismatched pupils, glowing eyes, negative space, blank page"
-
-        elif self.model == Model.V4 or self.model == Model.V4_INP:
-            if self.ucPreset == 0:
-                uc = "blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, multiple views, logo, too many watermarks"
-            elif self.ucPreset == 1:
-                uc = "blurry, lowres, error, worst quality, bad quality, jpeg artifacts, very displeasing"
-
-        elif self.model == Model.V4_CUR or self.model == Model.V4_CUR_INP:
-            if self.ucPreset == 0:
-                uc = "blurry, lowres, error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, logo, dated, signature, multiple views, gigantic breasts"
-            elif self.ucPreset == 1:
-                uc = "blurry, lowres, error, worst quality, bad quality, jpeg artifacts, very displeasing, logo, dated, signature"
-
-        elif self.model == Model.V3 or self.model == Model.V3_INP:
-            if self.ucPreset == 0:
-                uc = "lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract]"
-            elif self.ucPreset == 1:
-                uc = "lowres, jpeg artifacts, worst quality, watermark, blurry, very displeasing"
-            elif self.ucPreset == 2:
-                uc = "lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract], bad anatomy, bad hands, @_@, mismatched pupils, heart-shaped pupils, glowing eyes"
-
-        elif self.model == Model.FURRY or self.model == Model.FURRY_INP:
-            if self.ucPreset == 0:
-                uc = "{{worst quality}}, [displeasing], {unusual pupils}, guide lines, {{unfinished}}, {bad}, url, artist name, {{tall image}}, mosaic, {sketch page}, comic panel, impact (font), [dated], {logo}, ych, {what}, {where is your god now}, {distorted text}, repeated text, {floating head}, {1994}, {widescreen}, absolutely everyone, sequence, {compression artifacts}, hard translated, {cropped}, {commissioner name}, unknown text, high contrast"
-            elif self.ucPreset == 1:
-                uc = "{worst quality}, guide lines, unfinished, bad, url, tall image, widescreen, compression artifacts, unknown text"
-
-        self.negative_prompt = uc + ", " + self.negative_prompt
+        uc = UC_PRESETS.get(_family(self.model), {}).get(self.ucPreset)
+        if uc:
+            self.negative_prompt = f"{uc}, {self.negative_prompt}"
 
     # override
     def model_post_init(self, *args) -> None:

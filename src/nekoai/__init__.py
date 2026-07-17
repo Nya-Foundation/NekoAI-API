@@ -3,12 +3,15 @@ from .client import NovelAI
 from .constant import (
     Action,
     Controlnet,
+    EmotionLevel,
+    EmotionOptions,
     Endpoint,
     Host,
     Model,
     Noise,
     Resolution,
     Sampler,
+    TextModel,
 )
 from .exceptions import (
     APIError,
@@ -22,19 +25,19 @@ from .exceptions import (
 from .imaging import parse_image
 from .types import (
     CharacterPrompt,
-    EmotionLevel,
-    EmotionOptions,
     EventType,
     Image,
     Metadata,
     MsgpackEvent,
     PositionCoords,
+    TextParams,
 )
 
 __all__ = [
     "__version__",
     "NovelAI",
     "Metadata",
+    "TextParams",
     "parse_image",
     # enums
     "Action",
@@ -42,6 +45,7 @@ __all__ = [
     "Endpoint",
     "Host",
     "Model",
+    "TextModel",
     "Noise",
     "Resolution",
     "Sampler",
