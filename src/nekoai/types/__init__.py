@@ -1,4 +1,4 @@
-from .constant import DirectorTools, EmotionLevel, EmotionOptions
+from ..constant import EmotionLevel, EmotionOptions
 from .director import (
     BackgroundRemovalRequest,
     ColorizeRequest,
@@ -18,6 +18,7 @@ from .parameters import (
     V4NegativePromptFormat,
     V4PromptFormat,
 )
+from .text import TextParams
 from .user import User
 
 __all__ = [
@@ -26,6 +27,7 @@ __all__ = [
     "MsgpackEvent",
     "EventType",
     "Metadata",
+    "TextParams",
     "DirectorRequest",
     "LineArtRequest",
     "SketchRequest",
@@ -39,7 +41,6 @@ __all__ = [
     "V4CaptionFormat",
     "CharacterCaption",
     "PositionCoords",
-    "DirectorTools",
     "EmotionOptions",
     "EmotionLevel",
 ]
