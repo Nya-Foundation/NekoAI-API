@@ -34,6 +34,7 @@ as the first argument and default to `examples/input/example_image.png`.
 | `img2img.py` | Image-to-image with strength/noise | Anlas* |
 | `inpaint.py` | Masked inpainting (`inpaint.py <image> <mask>`) | Anlas* |
 | `vibe_transfer.py` | Style transfer from a reference image | Anlas* + 2 per vibe encode |
+| `enhance.py` | Prompt-guided img2img enhancement at 1.5x | Anlas (above free-tier size) |
 
 \* Standard generations (≤1024×1024, ≤28 steps, 1 sample) are free on Opus.
 

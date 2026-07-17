@@ -229,6 +229,23 @@ images = await client.generate_image(
 )
 ```
 
+### Enhance
+
+Re-run a generated image through the model as a prompt-guided img2img pass,
+optionally at a higher resolution — the equivalent of the web client's Enhance
+feature. Unlike `upscale`, the prompt actively guides the re-generation, so it
+can add or adjust detail:
+
+```python
+images = await client.enhance(
+    "output/final.png",
+    prompt="1girl, silver hair, blue eyes, intricate details",
+    scale=1.5,      # resolution multiplier (web UI offers up to 1.5x)
+    strength=0.4,   # lower = closer to the original
+    noise=0,        # higher may add detail, too high causes artifacts
+)
+```
+
 ## Text Generation
 
 Continue a story with NovelAI's text models. Input and output are plain text —
@@ -314,6 +331,7 @@ Authentication comes from `--token`, the `NAI_TOKEN` environment variable, or
 | `nekoai generate <prompt>` | Generate images (txt2img, img2img, inpaint, vibe) |
 | `nekoai text <prompt>` | Generate a text continuation |
 | `nekoai tool <name> <image>` | Run a Director or annotation tool |
+| `nekoai enhance <image> <prompt>` | Prompt-guided img2img enhancement pass |
 | `nekoai upscale <image>` | Upscale an image 2x or 4x |
 | `nekoai tags <partial>` | Suggest completions for a partial tag |
 | `nekoai subscription` | Show subscription info and Anlas balance |
@@ -331,6 +349,7 @@ nekoai text "Once upon a time," --max-length 80 --stream
 
 nekoai tool lineart image.png
 nekoai tool emotion image.png --emotion happy
+nekoai enhance image.png "1girl, intricate details" --scale 1.5 --strength 0.4
 nekoai upscale image.png --scale 4
 ```
 

@@ -12,6 +12,7 @@ from httpx import AsyncClient, ReadTimeout, Response
 from .auth import encode_access_key, prep_headers
 from .constant import (
     HEADERS,
+    Action,
     Controlnet,
     EmotionLevel,
     EmotionOptions,
@@ -388,6 +389,64 @@ class NovelAI:
                         yield event
         except ReadTimeout as e:
             raise TimeoutError(TIMEOUT_MESSAGE) from e
+
+    async def enhance(
+        self,
+        image,
+        prompt: str,
+        scale: float = 1.0,
+        strength: float = 0.4,
+        noise: float = 0,
+        model: Model = Model.V4_5,
+        **kwargs,
+    ) -> list[Image]:
+        """
+        Enhance an image: re-run it through the model as a prompt-guided
+        img2img pass, optionally at an increased resolution.
+
+        This mirrors the web client's Enhance feature (docs.novelai.net/en/image/enhance),
+        which is distinct from the pixel-space `upscale` tool: the prompt
+        actively guides the re-generation, so details can be added or adjusted.
+
+        Parameters
+        ----------
+        image: file path (`str`/`Path`), base64 string, raw `bytes`,
+            or a binary file-like object. Typically a previously generated image
+        prompt: `str`
+            Text prompt guiding the enhancement (usually the original prompt,
+            optionally emphasizing aspects the image is lacking)
+        scale: `float`, optional
+            Resolution multiplier applied during enhancement (the web UI offers
+            up to 1.5x), defaults to 1.0. The total pixel budget still applies
+        strength: `float`, optional
+            How much the pass may change the image (0.01-0.99), defaults to 0.4
+        noise: `float`, optional
+            Extra noise; higher values can add detail but may introduce
+            artifacts, defaults to 0
+        model: `Model`, optional
+            Model to enhance with, defaults to V4.5 full
+        **kwargs: `Any`
+            Additional `Metadata` fields (e.g. negative_prompt, seed, steps)
+
+        Returns
+        -------
+        `list[novelai.Image]`
+            The enhanced image(s)
+        """
+        width, height, base64_image = parse_image(image)
+
+        metadata = Metadata(
+            prompt=prompt,
+            model=model,
+            action=Action.IMG2IMG,
+            width=round(width * scale),
+            height=round(height * scale),
+            image=base64_image,
+            strength=strength,
+            noise=noise,
+            **kwargs,
+        )
+        return await self.generate_image(metadata)
 
     async def _prepare_image_payload(
         self, metadata: Metadata, is_opus: bool = False

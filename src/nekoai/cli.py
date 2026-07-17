@@ -143,6 +143,21 @@ async def _cmd_text(args) -> None:
             print(await client.generate_text(args.prompt, model=model, **params))
 
 
+async def _cmd_enhance(args) -> None:
+    async with _make_client(args) as client:
+        images = await client.enhance(
+            args.image,
+            args.prompt,
+            scale=args.scale,
+            strength=args.strength,
+            noise=args.noise,
+            model=_resolve_enum(Model, args.model),
+        )
+        for image in images:
+            image.save(args.output)
+            print(f"saved {args.output}/{image.filename}")
+
+
 async def _cmd_upscale(args) -> None:
     async with _make_client(args) as client:
         image = await client.upscale(args.image, scale=args.scale)
@@ -247,6 +262,25 @@ def build_parser() -> argparse.ArgumentParser:
     _add_output_arg(generate)
     _add_auth_args(generate)
     generate.set_defaults(func=_cmd_generate)
+
+    enhance = subparsers.add_parser(
+        "enhance", help="re-run an image through the model guided by a prompt"
+    )
+    enhance.add_argument("image", help="path to image file")
+    enhance.add_argument("prompt", help="text prompt guiding the enhancement")
+    enhance.add_argument(
+        "--scale", type=float, default=1.0, help="resolution multiplier (default: 1.0)"
+    )
+    enhance.add_argument(
+        "--strength", type=float, default=0.4, help="change strength (default: 0.4)"
+    )
+    enhance.add_argument("--noise", type=float, default=0, help="extra noise")
+    enhance.add_argument(
+        "--model", "-m", default="v4_5", help="model name or id (default: v4_5)"
+    )
+    _add_output_arg(enhance)
+    _add_auth_args(enhance)
+    enhance.set_defaults(func=_cmd_enhance)
 
     upscale = subparsers.add_parser("upscale", help="upscale an image")
     upscale.add_argument("image", help="path to image file")
