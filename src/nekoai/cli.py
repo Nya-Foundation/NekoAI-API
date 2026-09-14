@@ -26,6 +26,7 @@ INPAINT_VARIANTS = {
     Model.V4_CUR: Model.V4_CUR_INP,
     Model.V3: Model.V3_INP,
     Model.FURRY: Model.FURRY_INP,
+    Model.V5: Model.V5_INP,
 }
 
 

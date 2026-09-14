@@ -273,7 +273,7 @@ class Metadata(BaseModel):
     ) = None
 
     # V4/V4.5 specific fields
-    params_version: Literal[1, 2, 3] = 3
+    params_version: Literal[1, 2, 3, 4] = 3
     autoSmea: bool = Field(default=False)
     characterPrompts: list[CharacterPrompt] = []
 
@@ -335,6 +335,8 @@ class Metadata(BaseModel):
             If not, fill the missing values with default or truncate the extra values.
         """
 
+        if self.model in [Model.V5, Model.V5_CUR, Model.V5_INP] and self.reference_image_multiple:
+            raise ValueError("V5 models do not support vibe transfer")
         if self.model not in [Model.V3, Model.V3_INP, Model.FURRY, Model.FURRY_INP]:
             return self
         if not self.reference_image_multiple:
@@ -514,6 +516,10 @@ class Metadata(BaseModel):
         self.handle_v4_prompt()
         self.handle_v4_negative_prompt()
         self.handle_inpaint_img2img_strength()
+
+        if self.model in [Model.V5, Model.V5_CUR, Model.V5_INP]:
+            self.params_version = 4
+            self.noise_schedule = Noise.KARRAS
 
         # Disable SMEA and SMEA DYN and fill default extra param values for img2img/inpaint
         if self.action == Action.IMG2IMG or self.action == Action.INPAINT:

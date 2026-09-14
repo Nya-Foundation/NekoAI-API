@@ -107,3 +107,30 @@ def test_v4_actions_use_stream_and_v4_prompt():
         assert dumped["stream"] == "msgpack", kwargs
         assert "v4_prompt" in dumped and "v4_negative_prompt" in dumped, kwargs
         assert "sm" not in dumped, kwargs
+
+
+def test_v5_full_payload_defaults():
+    params = Metadata(prompt="x", model=Model.V5).model_dump_for_api()
+    assert params["model"] == "nai-diffusion-5-full"
+    assert params["parameters"]["params_version"] == 4
+    assert params["parameters"]["noise_schedule"] == "karras"
+
+
+def test_v5_curated_payload_defaults():
+    params = Metadata(prompt="x", model=Model.V5_CUR).model_dump_for_api()
+    assert params["model"] == "nai-diffusion-5-curated"
+    assert params["parameters"]["params_version"] == 4
+
+
+def test_v5_inpaint_payload():
+    params = Metadata(
+        prompt="x", model=Model.V5_INP, action=Action.INPAINT, image="i", mask="m"
+    ).model_dump_for_api()
+    assert params["model"] == "nai-diffusion-5-full-inpainting"
+    assert params["parameters"]["params_version"] == 4
+    assert params["parameters"]["noise_schedule"] == "karras"
+
+
+def test_v5_rejects_vibe_transfer():
+    with pytest.raises(ValueError, match="V5 models do not support vibe transfer"):
+        Metadata(prompt="x", model=Model.V5, reference_image_multiple=["image"])

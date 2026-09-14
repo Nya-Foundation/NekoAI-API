@@ -7,7 +7,7 @@
 [![CI](https://github.com/Nya-Foundation/nekoai-api/actions/workflows/publish.yml/badge.svg)](https://github.com/Nya-Foundation/nekoai-api/actions/workflows/publish.yml)
 
 An async, fully typed Python client for the NovelAI API, covering image
-generation (with first-class support for the V4.5 model family), text
+generation (with first-class support for the V4.5 and V5 model families), text
 generation, Director image tools, and account utilities.
 
 Request payloads are validated with pydantic and verified field-by-field against
@@ -18,7 +18,10 @@ what the website sends.
 
 - **Image generation** — text-to-image, img2img, inpainting, and vibe transfer
   (reference images are encoded through `/ai/encode-vibe` automatically, with
-  caching) for every model from V3 to V4.5.
+  caching) for models from V3 to V4.5 and inpainting for V5 Full.
+- **V5 support** — V5 Full (`Model.V5`), V5 Curated (`Model.V5_CUR`), and V5
+  Full Inpainting (`Model.V5_INP`). V5 requests use parameter version 4 and
+  the `karras` noise schedule.
 - **V4.5 support** — multi-character prompts with canvas positioning,
   character-level undesired content, and real-time streaming of denoising steps.
 - **Text generation** — story continuation with Erato, Kayra, and Clio.
@@ -66,6 +69,21 @@ async def main():
 
 asyncio.run(main())
 ```
+
+To use V5 Full, select `Model.V5`:
+
+```python
+images = await client.generate_image(
+    prompt="1girl, silver hair, pale lavender eyes",
+    model=Model.V5,
+    res_preset=Resolution.NORMAL_PORTRAIT,
+)
+```
+
+### V5 Notes
+
+V5 uses `params_version=4` and `noise_schedule="karras"` automatically.
+Vibe Transfer is not supported by the V5 models and raises `ValueError`.
 
 ### Authentication
 

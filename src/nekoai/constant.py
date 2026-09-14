@@ -64,6 +64,10 @@ class Model(Enum):
     # NAI V4.5 Curated
     V4_5_CUR = "nai-diffusion-4-5-curated"
     V4_5_CUR_INP = "nai-diffusion-4-5-curated-inpainting"
+    # NAI V5
+    V5 = "nai-diffusion-5-full"
+    V5_CUR = "nai-diffusion-5-curated"
+    V5_INP = "nai-diffusion-5-full-inpainting"
     # Furry model beta v1.3
     FURRY = "nai-diffusion-furry-3"
     FURRY_INP = "nai-diffusion-furry-3-inpainting"
@@ -80,6 +84,9 @@ def is_v4_model(model: Model) -> bool:
         Model.V4_5_INP,
         Model.V4_5_CUR,
         Model.V4_5_CUR_INP,
+        Model.V5,
+        Model.V5_CUR,
+        Model.V5_INP,
     )
 
 
