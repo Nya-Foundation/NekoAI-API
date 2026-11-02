@@ -72,8 +72,8 @@ asyncio.run(main())
 The client accepts either an access token or account credentials:
 
 ```python
-NovelAI(token="...")                            # explicit token
-NovelAI()                                       # token from $NAI_TOKEN
+NovelAI(token="...")  # explicit token
+NovelAI()  # token from $NAI_TOKEN
 NovelAI(username="user@example.com", password="...")
 ```
 
@@ -114,15 +114,15 @@ images = await client.generate_image(prompt="1girl, garden", model=Model.V5)
 ```python
 images = await client.generate_image(
     prompt="1girl, cute",
-    model=Model.V4_5,               # default: Model.V4_5
+    model=Model.V4_5,  # default: Model.V4_5
     res_preset=Resolution.NORMAL_SQUARE,  # or width=..., height=...
     steps=28,
-    scale=6.0,                      # prompt guidance
-    seed=1234567890,                # random when omitted
+    scale=6.0,  # prompt guidance
+    seed=1234567890,  # random when omitted
     n_samples=1,
     negative_prompt="lowres",
-    qualityToggle=True,             # append model quality tags
-    ucPreset=0,                     # undesired-content preset (varies by model)
+    qualityToggle=True,  # append model quality tags
+    ucPreset=0,  # undesired-content preset (varies by model)
 )
 ```
 
@@ -250,7 +250,7 @@ from nekoai import TextModel
 
 output = await client.generate_text(
     "The dragon circled the tower once more,",
-    model=TextModel.ERATO,          # llama-3-erato-v1 (default)
+    model=TextModel.ERATO,  # llama-3-erato-v1 (default)
     max_length=150,
     temperature=1.0,
 )
@@ -278,10 +278,10 @@ Every Director tool is a single method call. Image inputs accept a file path,
 ```python
 from nekoai import EmotionLevel, EmotionOptions
 
-result = await client.lineart("image.png")             # image to line art
-result = await client.sketch("image.png")              # image to sketch
+result = await client.lineart("image.png")  # image to line art
+result = await client.sketch("image.png")  # image to sketch
 result = await client.background_removal("image.png")  # remove background (costs Anlas)
-result = await client.declutter("image.png")           # remove text/artifacts
+result = await client.declutter("image.png")  # remove text/artifacts
 result = await client.colorize("lineart.png", prompt="silver hair", defry=0)
 
 result = await client.change_emotion(
@@ -305,6 +305,7 @@ tags = await client.suggest_tags("blue hai")  # [{"tag": "blue hair", ...}, ...]
 # ControlNet condition masks (edge/depth preprocessing).
 # Note: ControlNet-guided generation is a V1/V2-era feature not supported by V3+.
 from nekoai import Controlnet
+
 mask = await client.annotate_image("image.png", model=Controlnet.SCRIBBLER)
 
 # Subscription tier and Anlas balance
@@ -355,9 +356,9 @@ and `api_host` covers the endpoints still served only by the legacy API host
 ```python
 client = NovelAI(
     token="...",
-    host="https://your-image-proxy.example.com",      # default: https://image.novelai.net
+    host="https://your-image-proxy.example.com",  # default: https://image.novelai.net
     text_host="https://your-text-proxy.example.com",  # default: https://text.novelai.net
-    api_host="https://your-api-proxy.example.com",    # default: https://api.novelai.net
+    api_host="https://your-api-proxy.example.com",  # default: https://api.novelai.net
 )
 ```
 
@@ -375,8 +376,8 @@ client = NovelAI(token="...", rate_limit=10)  # at least 10 seconds between requ
 
 ```python
 client = NovelAI(token="...")
-await client.init(timeout=60)                       # per-request timeout in seconds
-await client.init(auto_close=True, close_delay=300) # close idle connections
+await client.init(timeout=60)  # per-request timeout in seconds
+await client.init(auto_close=True, close_delay=300)  # close idle connections
 ```
 
 ## Error Handling
