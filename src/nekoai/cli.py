@@ -20,6 +20,9 @@ from .types import EmotionLevel, EmotionOptions, EventType
 
 # generate/inpaint model ids differ; map each base model to its inpainting variant
 INPAINT_VARIANTS = {
+    Model.V5: Model.V5_INP,
+    Model.V5_MEDIUM: Model.V5_MEDIUM_INP,
+    Model.V5_CUR: Model.V4_5_CUR_INP,
     Model.V4_5: Model.V4_5_INP,
     Model.V4_5_CUR: Model.V4_5_CUR_INP,
     Model.V4: Model.V4_INP,

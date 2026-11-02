@@ -49,6 +49,11 @@ class Endpoint(Enum):
 
 
 class Model(Enum):
+    V5 = "nai-diffusion-5-full"
+    V5_MEDIUM = "nai-diffusion-5-full-medium"
+    V5_INP = "nai-diffusion-5-full-inpainting"
+    V5_MEDIUM_INP = "nai-diffusion-5-full-medium-inpainting"
+    V5_CUR = "nai-diffusion-5-curated"
     # NAI V3
     V3 = "nai-diffusion-3"
     V3_INP = "nai-diffusion-3-inpainting"
@@ -70,8 +75,13 @@ class Model(Enum):
 
 
 def is_v4_model(model: Model) -> bool:
-    """Check if the model is a V4 model."""
+    """Check if the model uses the V4+ prompt and streaming protocol."""
     return model in (
+        Model.V5,
+        Model.V5_MEDIUM,
+        Model.V5_INP,
+        Model.V5_MEDIUM_INP,
+        Model.V5_CUR,
         Model.V4,
         Model.V4_INP,
         Model.V4_CUR,
@@ -80,6 +90,17 @@ def is_v4_model(model: Model) -> bool:
         Model.V4_5_INP,
         Model.V4_5_CUR,
         Model.V4_5_CUR_INP,
+    )
+
+
+def is_v5_model(model: Model) -> bool:
+    """Check if the model belongs to the V5 family."""
+    return model in (
+        Model.V5,
+        Model.V5_MEDIUM,
+        Model.V5_INP,
+        Model.V5_MEDIUM_INP,
+        Model.V5_CUR,
     )
 
 

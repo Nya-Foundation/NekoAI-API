@@ -107,3 +107,42 @@ def test_v4_actions_use_stream_and_v4_prompt():
         assert dumped["stream"] == "msgpack", kwargs
         assert "v4_prompt" in dumped and "v4_negative_prompt" in dumped, kwargs
         assert "sm" not in dumped, kwargs
+
+
+@pytest.mark.parametrize(
+    "model,steps",
+    [(Model.V5, 23), (Model.V5_MEDIUM, 14), (Model.V5_CUR, 23), (Model.V5_INP, 23)],
+)
+def test_v5_payload_shape(model, steps):
+    payload = Metadata(prompt="1girl", model=model).model_dump_for_api()
+    params = payload["parameters"]
+    assert payload["model"] == model.value
+    assert params["params_version"] == 4
+    assert params["steps"] == steps
+    assert params["scale"] == 7
+    assert params["stream"] == "msgpack"
+    assert params["image_format"] == "webp"
+    assert params["straight_alpha"] is True
+    assert params["qualityPresetId"] == "standard"
+    assert params["ucPresetId"] == "heavy"
+    if model != Model.V5_CUR:
+        assert params["inpaintImg2ImgStrength"] == 1
+    assert params["v4_prompt"]["caption"]["base_caption"] == payload["input"]
+    assert (
+        params["v4_negative_prompt"]["caption"]["base_caption"]
+        == params["negative_prompt"]
+    )
+
+
+def test_v5_medium_rejects_unsupported_settings():
+    with pytest.raises(ValueError, match="V5 Medium requires steps=14"):
+        Metadata(prompt="x", model=Model.V5_MEDIUM, steps=23)
+    with pytest.raises(ValueError, match="V5 does not support vibe transfer"):
+        Metadata(prompt="x", model=Model.V5, reference_image_multiple=["x"])
+    with pytest.raises(ValueError, match="Karras"):
+        Metadata(prompt="x", model=Model.V5, noise_schedule="native")
+
+
+def test_v5_light_quality_tags():
+    meta = Metadata(prompt="1girl", model=Model.V5, qualityPresetId="light")
+    assert meta.prompt.endswith("very aesthetic, amazing quality, no text")

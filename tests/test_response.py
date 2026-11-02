@@ -67,6 +67,13 @@ async def test_multi_sample_finals_get_distinct_filenames():
     assert "_p0_" in names[0] and "_p1_" in names[1]
 
 
+def test_webp_final_uses_webp_extension():
+    event = final_event(0)
+    event["image"] = b"RIFF\x00\x00\x00\x00WEBP"
+    image = handle_msgpack_content(frame(event))[0]
+    assert image.filename.endswith(".webp")
+
+
 async def test_error_event_raises():
     data = frame({"event_type": "error", "code": 500, "message": "boom"})
     with pytest.raises(NovelAIError, match="boom"):

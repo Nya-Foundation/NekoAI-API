@@ -345,7 +345,7 @@ class NovelAI:
         **kwargs,
     ) -> AsyncGenerator[MsgpackEvent, None]:
         """
-        Generate images with a V4/V4.5 model, yielding msgpack events
+        Generate images with a V4 or V5 model, yielding msgpack events
         (intermediate denoising steps and final images) as they arrive.
 
         Parameters
@@ -365,7 +365,7 @@ class NovelAI:
         metadata = metadata or Metadata(**kwargs)
         if not is_v4_model(metadata.model):
             raise ValueError(
-                "Streaming generation requires a V4/V4.5 model; "
+                "Streaming generation requires a V4 or V5 model; "
                 "use generate_image() for V3 models."
             )
 
@@ -461,9 +461,12 @@ class NovelAI:
         await self._ensure_initialized()
 
         if self.verbose:
-            logger.info(
-                f"Generating image... estimated Anlas cost: {metadata.calculate_cost(is_opus)}"
-            )
+            if metadata.model.value.startswith("nai-diffusion-5"):
+                logger.info("Generating V5 image; check account usage for cost")
+            else:
+                logger.info(
+                    f"Generating image... estimated Anlas cost: {metadata.calculate_cost(is_opus)}"
+                )
 
         payload = metadata.model_dump_for_api()
 
