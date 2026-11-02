@@ -12,6 +12,7 @@ from ..constant import (
     Resolution,
     Sampler,
     is_v4_model,
+    is_v5_model,
 )
 from .parameters import (
     CharacterCaption,
@@ -23,6 +24,8 @@ from .parameters import (
 
 # Quality tags appended to the prompt when qualityToggle is on, per model family.
 QUALITY_TAGS: dict[Model, str] = {
+    Model.V5: "very aesthetic, masterpiece, no text",
+    Model.V5_CUR: "very aesthetic, masterpiece, no text",
     Model.V4_5: "very aesthetic, masterpiece, no text",
     Model.V4_5_CUR: "location, masterpiece, no text, -0.8::feet::, rating:general",
     Model.V4: "no text, best quality, very aesthetic, absurdres",
@@ -35,6 +38,12 @@ QUALITY_TAGS: dict[Model, str] = {
 # Preset meanings vary by model (e.g. V4.5: 0 Heavy, 1 Light, 2 Furry Focus,
 # 3 Human Focus); missing entries mean "no preset text" for that value.
 UC_PRESETS: dict[Model, dict[int, str]] = {
+    Model.V5: {
+        0: "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+        1: "nsfw, lowres, bad hands, bad anatomy, artistic error, sepia, white haze, worst quality, very displeasing, jpeg artifacts, 0::ai-generated::",
+        2: "nsfw, {worst quality}, distracting watermark, unfinished, bad quality, {widescreen}, upscale, {sequence}, {{grandfathered content}}, blurred foreground, chromatic aberration, sketch, everyone, [sketch background], simple, [flat colors], ych (character), outline, multiple scenes, [[horror (theme)]], comic",
+        3: "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page, @_@, mismatched pupils, glowing eyes, bad anatomy",
+    },
     Model.V4_5: {
         0: "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
         1: "nsfw, lowres, artistic error, scan artifacts, worst quality, bad quality, jpeg artifacts, multiple views, very displeasing, too many watermarks, negative space, blank page",
@@ -67,6 +76,10 @@ UC_PRESETS: dict[Model, dict[int, str]] = {
 
 # Inpainting variants share their base model's quality tags and UC presets
 _MODEL_FAMILY: dict[Model, Model] = {
+    Model.V5_MEDIUM: Model.V5,
+    Model.V5_INP: Model.V5,
+    Model.V5_MEDIUM_INP: Model.V5,
+    Model.V5_CUR: Model.V5,
     Model.V4_5_INP: Model.V4_5,
     Model.V4_5_CUR_INP: Model.V4_5_CUR,
     Model.V4_INP: Model.V4,
@@ -273,7 +286,7 @@ class Metadata(BaseModel):
     ) = None
 
     # V4/V4.5 specific fields
-    params_version: Literal[1, 2, 3] = 3
+    params_version: Literal[1, 2, 3, 4] = 3
     autoSmea: bool = Field(default=False)
     characterPrompts: list[CharacterPrompt] = []
 
@@ -285,6 +298,12 @@ class Metadata(BaseModel):
     normalize_reference_strength_multiple: bool = Field(default=True)
     deliberate_euler_ancestral_bug: bool = Field(default=False)
     prefer_brownian: bool = Field(default=False)
+    straight_alpha: bool | None = None
+    image_format: Literal["png", "webp", "jpg"] | None = None
+    qualityPresetId: Literal["standard", "light"] | None = None
+    ucPresetId: str | None = None
+    tag_hint_qt: int | None = None
+    tag_hint_uc_preset: int | None = None
 
     # only for V4.5 full
     inpaintImg2ImgStrength: int | None = None
@@ -380,7 +399,14 @@ class Metadata(BaseModel):
         Handle the inpaintImg2ImgStrength field for V4.5 full model.
         If the model is V4.5 full and inpaintImg2ImgStrength is not set, set it to 1.
         """
-        if self.model not in [Model.V4_5, Model.V4_5_INP]:
+        if self.model not in [
+            Model.V4_5,
+            Model.V4_5_INP,
+            Model.V5,
+            Model.V5_MEDIUM,
+            Model.V5_INP,
+            Model.V5_MEDIUM_INP,
+        ]:
             return
 
         if self.inpaintImg2ImgStrength is None:
@@ -476,6 +502,8 @@ class Metadata(BaseModel):
             return
 
         tags = QUALITY_TAGS.get(_family(self.model))
+        if is_v5_model(self.model) and self.qualityPresetId == "light":
+            tags = "very aesthetic, amazing quality, no text"
         if tags:
             self.prompt += ", " + tags
 
@@ -494,6 +522,59 @@ class Metadata(BaseModel):
         Post-initialization hook. Inherit from `pydantic.BaseModel`.
         Implement this method to add custom initialization logic.
         """
+        if is_v5_model(self.model):
+            provided = set(self.model_fields_set)
+            preset_id = ("heavy", "light", "furryFocus", "humanFocus")[self.ucPreset]
+            if self.ucPresetId is not None and self.ucPresetId != preset_id:
+                raise ValueError("ucPresetId must match ucPreset for V5")
+            if (
+                self.autoSmea
+                or self.dynamic_thresholding
+                or self.skip_cfg_above_sigma is not None
+            ):
+                raise ValueError(
+                    "V5 does not support SMEA, decrisper, or Variety Boost"
+                )
+            if self.noise_schedule != Noise.KARRAS:
+                raise ValueError("V5 requires the Karras noise schedule")
+            if self.controlnet_condition or self.controlnet_model:
+                raise ValueError("V5 does not support ControlNet")
+            if self.model in (Model.V5_MEDIUM, Model.V5_MEDIUM_INP):
+                if self.ucPresetId not in (None, "heavy"):
+                    raise ValueError("V5 Medium requires the heavy UC preset")
+                for field, expected in (
+                    ("steps", 14),
+                    ("sampler", Sampler.EULER_ANC),
+                    ("cfg_rescale", 0),
+                    ("ucPreset", 0),
+                    ("negative_prompt", ""),
+                ):
+                    if field in provided and getattr(self, field) != expected:
+                        raise ValueError(f"V5 Medium requires {field}={expected!r}")
+                if self.v4_negative_prompt is not None:
+                    raise ValueError(
+                        "V5 Medium does not support a custom negative prompt"
+                    )
+            self.params_version = 4
+            if "scale" not in provided:
+                self.scale = 7.0
+            if self.model in (Model.V5_MEDIUM, Model.V5_MEDIUM_INP):
+                self.steps = 14
+            elif "steps" not in provided:
+                self.steps = 32
+            self.straight_alpha = (
+                True if self.straight_alpha is None else self.straight_alpha
+            )
+            self.image_format = self.image_format or "png"
+            self.qualityPresetId = self.qualityPresetId or "standard"
+            self.ucPresetId = preset_id
+            self.tag_hint_qt = 1 if self.tag_hint_qt is None else self.tag_hint_qt
+            self.tag_hint_uc_preset = (
+                2 if self.tag_hint_uc_preset is None else self.tag_hint_uc_preset
+            )
+            if self.reference_image_multiple:
+                raise ValueError("V5 does not support vibe transfer")
+
         # Fall back to resolution preset if width and height are not provided
         self.handle_resolution()
 
@@ -671,6 +752,12 @@ class Metadata(BaseModel):
 
         # The web client always sends this key, as null when Variety Boost is off
         params["skip_cfg_above_sigma"] = self.skip_cfg_above_sigma
+
+        if is_v5_model(self.model):
+            for key in ("qualityToggle", "ucPreset", "skip_cfg_above_sigma"):
+                params.pop(key, None)
+            if self.model in (Model.V5_MEDIUM, Model.V5_MEDIUM_INP):
+                params.pop("cfg_rescale", None)
 
         # V3/Furry payloads carry sm/sm_dyn but none of the V4-specific fields
         # (captured web payloads in examples/payloads/nai3.json)
