@@ -561,7 +561,7 @@ class Metadata(BaseModel):
             if self.model in (Model.V5_MEDIUM, Model.V5_MEDIUM_INP):
                 self.steps = 14
             elif "steps" not in provided:
-                self.steps = 23
+                self.steps = 32
             self.straight_alpha = (
                 True if self.straight_alpha is None else self.straight_alpha
             )

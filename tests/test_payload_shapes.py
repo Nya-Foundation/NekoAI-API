@@ -111,7 +111,7 @@ def test_v4_actions_use_stream_and_v4_prompt():
 
 @pytest.mark.parametrize(
     "model,steps",
-    [(Model.V5, 23), (Model.V5_MEDIUM, 14), (Model.V5_CUR, 23), (Model.V5_INP, 23)],
+    [(Model.V5, 32), (Model.V5_MEDIUM, 14), (Model.V5_CUR, 32), (Model.V5_INP, 32)],
 )
 def test_v5_payload_shape(model, steps):
     payload = Metadata(prompt="1girl", model=model).model_dump_for_api()
