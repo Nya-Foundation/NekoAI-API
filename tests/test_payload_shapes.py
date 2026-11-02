@@ -121,7 +121,7 @@ def test_v5_payload_shape(model, steps):
     assert params["steps"] == steps
     assert params["scale"] == 7
     assert params["stream"] == "msgpack"
-    assert params["image_format"] == "webp"
+    assert params["image_format"] == "png"
     assert params["straight_alpha"] is True
     assert params["qualityPresetId"] == "standard"
     assert params["ucPresetId"] == "heavy"
@@ -146,3 +146,10 @@ def test_v5_medium_rejects_unsupported_settings():
 def test_v5_light_quality_tags():
     meta = Metadata(prompt="1girl", model=Model.V5, qualityPresetId="light")
     assert meta.prompt.endswith("very aesthetic, amazing quality, no text")
+
+
+def test_v5_webp_can_be_selected_explicitly():
+    params = Metadata(
+        prompt="x", model=Model.V5, image_format="webp"
+    ).model_dump_for_api()["parameters"]
+    assert params["image_format"] == "webp"
