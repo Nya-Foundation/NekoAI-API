@@ -103,7 +103,7 @@ before the request is sent; see the `Metadata` docstring for the full set.
 | NAI Diffusion V3 | `Model.V3` | `Model.V3_INP` |
 | NAI Diffusion Furry V3 | `Model.FURRY` | `Model.FURRY_INP` |
 
-V5 uses the streaming image endpoint and `params_version=4`. Select a V5 model explicitly; the library default remains V4.5. V5 Full and Curated default to 32 steps and guidance 7. At normal resolution, 32 steps exceed the Opus 28 step allowance and use Anlas. Medium effort is fixed at 14 steps and Euler Ancestral. Medium effort rejects custom steps, sampler, undesired content, and guidance rescale. V5 outputs WebP by default. Set `image_format="png"` to request PNG. Vibe transfer is not available with V5. The CLI maps V5 Curated inpainting to V4.5 Curated inpainting.
+V5 uses the streaming image endpoint and `params_version=4`. Select a V5 model explicitly; the library default remains V4.5. V5 Full and Curated default to 32 steps and guidance 7. At normal resolution, 32 steps exceed the Opus 28 step allowance and use Anlas. Medium effort is fixed at 14 steps and Euler Ancestral. Medium effort rejects custom steps, sampler, undesired content, and guidance rescale. V5 requests PNG by default. Set `image_format="webp"` to request WebP. Vibe transfer is not available with V5. The CLI maps V5 Curated inpainting to V4.5 Curated inpainting.
 
 ```python
 images = await client.generate_image(prompt="1girl, garden", model=Model.V5)

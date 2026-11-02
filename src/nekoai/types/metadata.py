@@ -565,7 +565,7 @@ class Metadata(BaseModel):
             self.straight_alpha = (
                 True if self.straight_alpha is None else self.straight_alpha
             )
-            self.image_format = self.image_format or "webp"
+            self.image_format = self.image_format or "png"
             self.qualityPresetId = self.qualityPresetId or "standard"
             self.ucPresetId = preset_id
             self.tag_hint_qt = 1 if self.tag_hint_qt is None else self.tag_hint_qt
