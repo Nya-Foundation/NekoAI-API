@@ -93,12 +93,21 @@ before the request is sent; see the `Metadata` docstring for the full set.
 
 | Model | Enum | Inpainting variant |
 |---|---|---|
+| NAI Diffusion V5 Full, High effort | `Model.V5` | `Model.V5_INP` |
+| NAI Diffusion V5 Full, Medium effort | `Model.V5_MEDIUM` | `Model.V5_MEDIUM_INP` |
+| NAI Diffusion V5 Curated | `Model.V5_CUR` | V4.5 Curated inpainting until V5 Curated inpainting is available |
 | NAI Diffusion V4.5 Full (recommended) | `Model.V4_5` | `Model.V4_5_INP` |
 | NAI Diffusion V4.5 Curated | `Model.V4_5_CUR` | `Model.V4_5_CUR_INP` |
 | NAI Diffusion V4 Full | `Model.V4` | `Model.V4_INP` |
 | NAI Diffusion V4 Curated | `Model.V4_CUR` | `Model.V4_CUR_INP` |
 | NAI Diffusion V3 | `Model.V3` | `Model.V3_INP` |
 | NAI Diffusion Furry V3 | `Model.FURRY` | `Model.FURRY_INP` |
+
+V5 uses the streaming image endpoint and `params_version=4`. Select a V5 model explicitly; the library default remains V4.5. V5 Full and Curated default to 23 steps and guidance 7. Medium effort uses 14 steps and Euler Ancestral. Medium effort rejects custom steps, sampler, undesired content, and guidance rescale. V5 outputs WebP by default. Set `image_format="png"` to request PNG. Vibe transfer is not available with V5. The CLI maps V5 Curated inpainting to V4.5 Curated inpainting.
+
+```python
+images = await client.generate_image(prompt="1girl, garden", model=Model.V5_MEDIUM)
+```
 
 ### Common parameters
 

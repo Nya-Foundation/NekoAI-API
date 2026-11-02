@@ -135,6 +135,8 @@ def _create_msgpack_event(obj: dict) -> MsgpackEvent:
         extension = "jpg"
     elif image_data.startswith(b"\x89PNG\r\n\x1a\n"):
         extension = "png"
+    elif image_data.startswith(b"RIFF") and image_data[8:12] == b"WEBP":
+        extension = "webp"
     else:
         raise ImageProcessingError(
             f"Unsupported image format in msgpack data: {image_data[:16].hex()}"
