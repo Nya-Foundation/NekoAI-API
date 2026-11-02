@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from nekoai import Action, Metadata, Model
+from nekoai import Action, CharacterPrompt, Metadata, Model, PositionCoords
 
 PAYLOADS = Path(__file__).parent.parent / "examples" / "payloads"
 
@@ -153,3 +153,31 @@ def test_v5_webp_can_be_selected_explicitly():
         prompt="x", model=Model.V5, image_format="webp"
     ).model_dump_for_api()["parameters"]
     assert params["image_format"] == "webp"
+
+
+def test_v5_character_and_img2img_request_shapes():
+    characters = Metadata(
+        prompt="2girls",
+        model=Model.V5,
+        characterPrompts=[
+            CharacterPrompt(prompt="girl, red hair", center=PositionCoords(x=0.28)),
+            CharacterPrompt(prompt="girl, blue hair", center=PositionCoords(x=0.72)),
+        ],
+    ).model_dump_for_api()["parameters"]
+    assert characters["use_coords"] is True
+    assert [
+        caption["char_caption"]
+        for caption in characters["v4_prompt"]["caption"]["char_captions"]
+    ] == ["girl, red hair", "girl, blue hair"]
+
+    img2img = Metadata(
+        prompt="2girls",
+        model=Model.V5,
+        action=Action.IMG2IMG,
+        image="base64-image",
+        strength=0.35,
+        noise=0.05,
+    ).model_dump_for_api()
+    assert img2img["action"] == "img2img"
+    assert img2img["parameters"]["strength"] == 0.35
+    assert img2img["parameters"]["inpaintImg2ImgStrength"] == 1
