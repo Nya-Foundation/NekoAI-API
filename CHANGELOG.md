@@ -1,6 +1,32 @@
 # CHANGELOG
 
 
+## v0.6.0 (2026-11-13)
+
+### Bug Fixes
+
+- Default V5 images to PNG
+  ([`4100979`](https://github.com/Nya-Foundation/NekoAI-API/commit/41009790094fccbd35cfcffdbaa72d251c340f2c))
+
+### Chores
+
+- **format**: Apply automatic formatting [skip ci]
+  ([`c24e048`](https://github.com/Nya-Foundation/NekoAI-API/commit/c24e0480458f74126790bdd0f965550cc598ccdf))
+
+### Features
+
+- Default V5 to 32 steps
+  ([`584ea1e`](https://github.com/Nya-Foundation/NekoAI-API/commit/584ea1e47e09cac7f594a83db353c7721a550811))
+
+- Support NovelAI Diffusion V5
+  ([`b32a25d`](https://github.com/Nya-Foundation/NekoAI-API/commit/b32a25daaa109a31e339cc1c32aed5eea1392a3d))
+
+### Testing
+
+- Cover V5 character and img2img requests
+  ([`0e75522`](https://github.com/Nya-Foundation/NekoAI-API/commit/0e7552289994c102211c6609ce1062211ed5b262))
+
+
 ## v0.5.0 (2026-07-17)
 
 ### Bug Fixes
